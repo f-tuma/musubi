@@ -1023,8 +1023,10 @@ COUNT and anchor. See [single additional date contract and evidence](caldav-rdat
 ## iCloud personal master-content authorization (2026-09-10)
 
 The user approved a bounded alternative to affirmative pre-write DAV privilege
-proof. `ICLOUD_PERSONAL_CONTENT_WRITES_ENABLED` defaults to false and also requires
-`EVENT_TIME_EDITS_ENABLED`. It is restricted to verified HTTPS iCloud CalDAV
+proof. `ICLOUD_PERSONAL_CONTENT_WRITES_ENABLED` defaults to false. On this series
+path it also requires `EVENT_TIME_EDITS_ENABLED`; the
+[legacy one-off path](#icloud-legacy-one-off-content-updates-2026-11-07) does not.
+It is restricted to verified HTTPS iCloud CalDAV
 account and destination hosts and whole-series personal master title, description
 and location updates. It does not enable time, recurrence, occurrence/following,
 alarm, scheduling, creation or deletion operations.
@@ -1058,6 +1060,116 @@ worker ACK, post-PUT membership revocation without ACK, provider 403/412, and
 ambiguous complete-resource recovery. Existing CalDAV scope regressions and the
 full project check also pass. These tests intercept provider DNS/HTTP and do not
 constitute live iCloud acceptance.
+
+## iCloud legacy one-off content updates (2026-11-07)
+
+Incident repair, approved design v4. The legacy `PATCH /api/v1/events` content
+path (title, description, location) can update a timed one-off event without an
+explicit time model (legacy-unknown time) on a verified iCloud destination. This
+covers origin iCloud events and Musubi-created mirrors. The only gate is
+`ICLOUD_PERSONAL_CONTENT_WRITES_ENABLED` (default false); `EVENT_TIME_EDITS_ENABLED`
+is not consulted and stays independent. Known-time, scope and series, alarm,
+RSVP, organizer, create, delete, Google, Microsoft and non-iCloud CalDAV
+behaviour is unchanged. With the flag off, every observed iCloud response is
+refused before commit exactly as in 0.2.18. Turning the flag on is a separate,
+verified operational step; neither this code nor its reviews activate it.
+
+**Eligibility** (never a refusal; re-derived at handler and worker preflight,
+nothing persisted). All of these must hold, otherwise the unchanged strict
+legacy preflight runs:
+
+- a content-only patch with no scope intent;
+- a pinned plan limited to SUMMARY, DESCRIPTION and LOCATION;
+- a canonical event that is not recurring, not a series member or occurrence,
+  has no attendees, is not a meeting and is not cancelled;
+- a mapping with a UID and a strong ETag;
+- verified HTTPS iCloud account, collection and resource hosts.
+
+**Refusals**, in order, for eligible requests:
+
+1. Ownership: owned account, exactly one event link for the collection, its
+   current enabled row, and the event on that calendar. Otherwise `unknown`.
+2. The link owner's role allows `editEvents`. Otherwise `denied`.
+3. A strict resource URL inside the collection. Otherwise `unknown`, with no
+   request sent.
+4. Resource ACL: a grant takes the existing strict path; an explicit set without
+   it is `denied`; anything except an explicit empty 404 propstat is `unknown`;
+   408, 429 and 5xx stay transient.
+5. A fresh collection privilege set that satisfies the discovery predicate
+   (create, update or delete). A read-only or empty set is `denied`; missing,
+   malformed or an HTTP error is `unknown`. This is necessary, never sufficient:
+   it is not inherited authorization for the resource.
+6. A complete GET with the accepted strong ETag and UID, then the strict
+   personal shape. Any ORGANIZER, METHOD, ATTENDEE, recurrence property, extra
+   or nested component, malformed VALARM or VTIMEZONE, or an all-day DATE value
+   is `unsupported`. Finally a dry run of the exact preserving transformation.
+
+The guarded transport's exact redirect refusal on these reads becomes
+`unknown`. Aborts, timeouts and every other untyped error keep their existing
+handling.
+
+**Delivery.** Every legacy update of an iCloud-class destination takes this
+path, whatever the flag says:
+
+- strict URL and redirect refusal;
+- a GET that must return the accepted strong ETag;
+- `If-Match` PUT;
+- a complete readback whose own strong ETag is the only one adopted. A PUT
+  response ETag is never adopted.
+
+Outcomes:
+
+- PUT 403 is `blocked`;
+- PUT 412 is `conflict`;
+- a 5xx, an unexpected 2xx or a network failure is `unconfirmed`;
+- after acceptance, a readback mismatch, readback error, redirect or non-strong
+  readback ETag is `unconfirmed` (`provider-write-failed`), not a conflict.
+
+The committed request answers 502 `event-delivery-unconfirmed` (409 for a
+conflict) with `localCommitted: true`.
+
+**Reconciliation.** The next due attempt of an `unconfirmed` row reads first:
+
+- a matching desired projection with a strong ETag completes without a PUT;
+- a changed validator is a conflict;
+- an unchanged strong validator gets a full re-preflight and one conditional PUT.
+
+The host also guards iCloud-class CalDAV update delivery reads. A present
+observation without a strong ETag, or a missing account, stays `unconfirmed`:
+no ACK and no PUT. A write is never repeated blindly. Other providers, delete
+rows, validator refresh and conflict previews are unaffected.
+
+**Limits.**
+
+- Legacy all-day iCloud one-offs remain unsupported; that is a separate future
+  slice.
+- iCloud has never been observed returning a weak or missing ETag on these
+  reads. If it did so permanently, the row would stay `unconfirmed` and retry
+  with backoff capped at one hour. Watch for persistent `unconfirmed` /
+  `provider-write-failed` iCloud rows in delivery status.
+- If iCloud rewrites bytes on PUT, an edit first answers 502 and completes on
+  the next due attempt by reconciliation.
+- Unobserved live: read-only shared collections, a PUT ETag, readback byte
+  stability, and a collection PROPFIND with `redirect: "error"`.
+
+**Rollback:** unset the flag and redeploy.
+
+- New legacy updates are refused with 403 before commit.
+- Committed `pending` or `retry` rows re-run preflight and settle as
+  `blocked/provider-permission-unknown`. Local content then stays ahead of
+  iCloud until the user acts.
+- `unconfirmed` rows reconcile by read first.
+- Completed rows remain.
+
+**Validation:**
+
+- an adapter matrix at the DNS, pinned-leaf and DB-module ports;
+- `event-delivery` JSON cases for runtime and host outcomes, including the
+  strong-ETag seam;
+- a disposable PostgreSQL integration from `handlerUpdateEvent` through inline
+  delivery, worker re-derivation, reconciliation and production link disable.
+
+All provider HTTP is synthetic. This is not live iCloud acceptance.
 
 ## Personal one-off content edits (0.1.8)
 

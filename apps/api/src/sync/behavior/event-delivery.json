@@ -9094,6 +9094,1461 @@
       }
     },
     {
+      "id": "caldav-icloud-update-readback-unconfirmed",
+      "title": "iCloud legacy update readback failure after PUT acceptance stays unconfirmed and schedulable",
+      "row": {
+        "provider": "caldav",
+        "action": "update",
+        "externalCalendarID": "https://p123-caldav.icloud.com/123/calendars/home/",
+        "payload": {}
+      },
+      "adapter": [
+        "assertEventWrite",
+        "pushUpdate"
+      ],
+      "inspectNative": true,
+      "steps": [
+        {
+          "port": "db.getExternalLinkForCalendar",
+          "result": "<current-destination>"
+        },
+        {
+          "port": "db.hasEventOutboxRevisionCoverage",
+          "result": true
+        },
+        {
+          "port": "db.getEventOutboxExpectedRef",
+          "result": {
+            "externalEventId": "https://p123-caldav.icloud.com/123/calendars/home/fixture.ics",
+            "etag": "\"v1\"",
+            "icalUid": "fixture-uid"
+          }
+        },
+        {
+          "port": "native.assertEventWrite"
+        },
+        {
+          "port": "db.getExternalLinkForCalendar",
+          "result": "<current-destination>"
+        },
+        {
+          "port": "native.pushUpdate",
+          "error": {
+            "code": "provider-write-failed",
+            "outcome": "unconfirmed"
+          }
+        },
+        {
+          "port": "db.finishEventOutbox"
+        }
+      ],
+      "returnedStatus": "unconfirmed",
+      "expected": {
+        "boundary": "actual-event-delivery-with-fixture-db-and-native-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.getExternalLinkForCalendar",
+          "db.hasEventOutboxRevisionCoverage",
+          "db.getEventOutboxExpectedRef",
+          "native.assertEventWrite",
+          "db.getExternalLinkForCalendar",
+          "native.pushUpdate",
+          "db.finishEventOutbox",
+          "db.get"
+        ],
+        "returnedStatus": "unconfirmed",
+        "completions": [],
+        "finishes": [
+          {
+            "status": "unconfirmed",
+            "code": "provider-write-failed",
+            "details": {
+              "uncertain": true,
+              "nextAttemptAt": "<time>"
+            }
+          }
+        ],
+        "native": [
+          {
+            "method": "assertEventWrite",
+            "args": [
+              "fixture-owner",
+              "fixture-account",
+              "https://p123-caldav.icloud.com/123/calendars/home/",
+              {
+                "action": "update",
+                "event": {
+                  "id": "abcdef01-abcd-4000-8000-abcdefabcdea",
+                  "creatorID": "fixture-owner",
+                  "organizer": "fixture-owner",
+                  "title": "Accepted title",
+                  "color": "#112233",
+                  "start": "2026-10-26T10:11:12.123Z",
+                  "end": "2026-10-26T11:12:13.456Z",
+                  "calendars": [
+                    "fixture-calendar"
+                  ],
+                  "isCanceled": false,
+                  "isAllDay": false,
+                  "hasAttendees": false,
+                  "description": "Keep description",
+                  "location": "Keep location"
+                },
+                "external": {
+                  "externalEventId": "https://p123-caldav.icloud.com/123/calendars/home/fixture.ics",
+                  "etag": "\"v1\"",
+                  "icalUid": "fixture-uid"
+                },
+                "signal": "<signal>"
+              }
+            ]
+          },
+          {
+            "method": "pushUpdate",
+            "args": [
+              "fixture-owner",
+              "fixture-account",
+              "https://p123-caldav.icloud.com/123/calendars/home/",
+              "https://p123-caldav.icloud.com/123/calendars/home/fixture.ics",
+              {
+                "id": "abcdef01-abcd-4000-8000-abcdefabcdea",
+                "creatorID": "fixture-owner",
+                "organizer": "fixture-owner",
+                "title": "Accepted title",
+                "color": "#112233",
+                "start": "2026-10-26T10:11:12.123Z",
+                "end": "2026-10-26T11:12:13.456Z",
+                "calendars": [
+                  "fixture-calendar"
+                ],
+                "isCanceled": false,
+                "isAllDay": false,
+                "hasAttendees": false,
+                "description": "Keep description",
+                "location": "Keep location"
+              },
+              {
+                "externalEventId": "https://p123-caldav.icloud.com/123/calendars/home/fixture.ics",
+                "etag": "\"v1\"",
+                "icalUid": "fixture-uid"
+              },
+              null,
+              "<signal>",
+              null,
+              null
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "caldav-icloud-update-put-403-blocked",
+      "title": "iCloud legacy update PUT 403 is a known no-write block without uncertainty",
+      "row": {
+        "provider": "caldav",
+        "action": "update",
+        "externalCalendarID": "https://p123-caldav.icloud.com/123/calendars/home/",
+        "payload": {}
+      },
+      "adapter": [
+        "assertEventWrite",
+        "pushUpdate"
+      ],
+      "inspectNative": true,
+      "steps": [
+        {
+          "port": "db.getExternalLinkForCalendar",
+          "result": "<current-destination>"
+        },
+        {
+          "port": "db.hasEventOutboxRevisionCoverage",
+          "result": true
+        },
+        {
+          "port": "db.getEventOutboxExpectedRef",
+          "result": {
+            "externalEventId": "https://p123-caldav.icloud.com/123/calendars/home/fixture.ics",
+            "etag": "\"v1\"",
+            "icalUid": "fixture-uid"
+          }
+        },
+        {
+          "port": "native.assertEventWrite"
+        },
+        {
+          "port": "db.getExternalLinkForCalendar",
+          "result": "<current-destination>"
+        },
+        {
+          "port": "native.pushUpdate",
+          "error": {
+            "code": "provider-write-failed",
+            "outcome": "not-written",
+            "status": 403
+          }
+        },
+        {
+          "port": "db.finishEventOutbox"
+        }
+      ],
+      "returnedStatus": "blocked",
+      "expected": {
+        "boundary": "actual-event-delivery-with-fixture-db-and-native-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.getExternalLinkForCalendar",
+          "db.hasEventOutboxRevisionCoverage",
+          "db.getEventOutboxExpectedRef",
+          "native.assertEventWrite",
+          "db.getExternalLinkForCalendar",
+          "native.pushUpdate",
+          "db.finishEventOutbox",
+          "db.get"
+        ],
+        "returnedStatus": "blocked",
+        "completions": [],
+        "finishes": [
+          {
+            "status": "blocked",
+            "code": "provider-write-failed",
+            "details": {
+              "uncertain": false,
+              "nextAttemptAt": "<time>"
+            }
+          }
+        ],
+        "native": [
+          {
+            "method": "assertEventWrite",
+            "args": [
+              "fixture-owner",
+              "fixture-account",
+              "https://p123-caldav.icloud.com/123/calendars/home/",
+              {
+                "action": "update",
+                "event": {
+                  "id": "abcdef01-abcd-4000-8000-abcdefabcdea",
+                  "creatorID": "fixture-owner",
+                  "organizer": "fixture-owner",
+                  "title": "Accepted title",
+                  "color": "#112233",
+                  "start": "2026-10-26T10:11:12.123Z",
+                  "end": "2026-10-26T11:12:13.456Z",
+                  "calendars": [
+                    "fixture-calendar"
+                  ],
+                  "isCanceled": false,
+                  "isAllDay": false,
+                  "hasAttendees": false,
+                  "description": "Keep description",
+                  "location": "Keep location"
+                },
+                "external": {
+                  "externalEventId": "https://p123-caldav.icloud.com/123/calendars/home/fixture.ics",
+                  "etag": "\"v1\"",
+                  "icalUid": "fixture-uid"
+                },
+                "signal": "<signal>"
+              }
+            ]
+          },
+          {
+            "method": "pushUpdate",
+            "args": [
+              "fixture-owner",
+              "fixture-account",
+              "https://p123-caldav.icloud.com/123/calendars/home/",
+              "https://p123-caldav.icloud.com/123/calendars/home/fixture.ics",
+              {
+                "id": "abcdef01-abcd-4000-8000-abcdefabcdea",
+                "creatorID": "fixture-owner",
+                "organizer": "fixture-owner",
+                "title": "Accepted title",
+                "color": "#112233",
+                "start": "2026-10-26T10:11:12.123Z",
+                "end": "2026-10-26T11:12:13.456Z",
+                "calendars": [
+                  "fixture-calendar"
+                ],
+                "isCanceled": false,
+                "isAllDay": false,
+                "hasAttendees": false,
+                "description": "Keep description",
+                "location": "Keep location"
+              },
+              {
+                "externalEventId": "https://p123-caldav.icloud.com/123/calendars/home/fixture.ics",
+                "etag": "\"v1\"",
+                "icalUid": "fixture-uid"
+              },
+              null,
+              "<signal>",
+              null,
+              null
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "caldav-icloud-update-get-503-retry",
+      "title": "iCloud legacy update transient pre-PUT read failure retries without uncertainty",
+      "row": {
+        "provider": "caldav",
+        "action": "update",
+        "externalCalendarID": "https://p123-caldav.icloud.com/123/calendars/home/",
+        "payload": {}
+      },
+      "adapter": [
+        "assertEventWrite",
+        "pushUpdate"
+      ],
+      "inspectNative": true,
+      "steps": [
+        {
+          "port": "db.getExternalLinkForCalendar",
+          "result": "<current-destination>"
+        },
+        {
+          "port": "db.hasEventOutboxRevisionCoverage",
+          "result": true
+        },
+        {
+          "port": "db.getEventOutboxExpectedRef",
+          "result": {
+            "externalEventId": "https://p123-caldav.icloud.com/123/calendars/home/fixture.ics",
+            "etag": "\"v1\"",
+            "icalUid": "fixture-uid"
+          }
+        },
+        {
+          "port": "native.assertEventWrite"
+        },
+        {
+          "port": "db.getExternalLinkForCalendar",
+          "result": "<current-destination>"
+        },
+        {
+          "port": "native.pushUpdate",
+          "error": {
+            "code": "provider-write-failed",
+            "outcome": "not-written",
+            "status": 503
+          }
+        },
+        {
+          "port": "db.finishEventOutbox"
+        }
+      ],
+      "returnedStatus": "retry",
+      "expected": {
+        "boundary": "actual-event-delivery-with-fixture-db-and-native-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.getExternalLinkForCalendar",
+          "db.hasEventOutboxRevisionCoverage",
+          "db.getEventOutboxExpectedRef",
+          "native.assertEventWrite",
+          "db.getExternalLinkForCalendar",
+          "native.pushUpdate",
+          "db.finishEventOutbox",
+          "db.get"
+        ],
+        "returnedStatus": "retry",
+        "completions": [],
+        "finishes": [
+          {
+            "status": "retry",
+            "code": "provider-write-failed",
+            "details": {
+              "uncertain": false,
+              "nextAttemptAt": "<time>"
+            }
+          }
+        ],
+        "native": [
+          {
+            "method": "assertEventWrite",
+            "args": [
+              "fixture-owner",
+              "fixture-account",
+              "https://p123-caldav.icloud.com/123/calendars/home/",
+              {
+                "action": "update",
+                "event": {
+                  "id": "abcdef01-abcd-4000-8000-abcdefabcdea",
+                  "creatorID": "fixture-owner",
+                  "organizer": "fixture-owner",
+                  "title": "Accepted title",
+                  "color": "#112233",
+                  "start": "2026-10-26T10:11:12.123Z",
+                  "end": "2026-10-26T11:12:13.456Z",
+                  "calendars": [
+                    "fixture-calendar"
+                  ],
+                  "isCanceled": false,
+                  "isAllDay": false,
+                  "hasAttendees": false,
+                  "description": "Keep description",
+                  "location": "Keep location"
+                },
+                "external": {
+                  "externalEventId": "https://p123-caldav.icloud.com/123/calendars/home/fixture.ics",
+                  "etag": "\"v1\"",
+                  "icalUid": "fixture-uid"
+                },
+                "signal": "<signal>"
+              }
+            ]
+          },
+          {
+            "method": "pushUpdate",
+            "args": [
+              "fixture-owner",
+              "fixture-account",
+              "https://p123-caldav.icloud.com/123/calendars/home/",
+              "https://p123-caldav.icloud.com/123/calendars/home/fixture.ics",
+              {
+                "id": "abcdef01-abcd-4000-8000-abcdefabcdea",
+                "creatorID": "fixture-owner",
+                "organizer": "fixture-owner",
+                "title": "Accepted title",
+                "color": "#112233",
+                "start": "2026-10-26T10:11:12.123Z",
+                "end": "2026-10-26T11:12:13.456Z",
+                "calendars": [
+                  "fixture-calendar"
+                ],
+                "isCanceled": false,
+                "isAllDay": false,
+                "hasAttendees": false,
+                "description": "Keep description",
+                "location": "Keep location"
+              },
+              {
+                "externalEventId": "https://p123-caldav.icloud.com/123/calendars/home/fixture.ics",
+                "etag": "\"v1\"",
+                "icalUid": "fixture-uid"
+              },
+              null,
+              "<signal>",
+              null,
+              null
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "caldav-icloud-reconcile-match-strong",
+      "title": "iCloud unconfirmed update matching desired content with a strong ETag completes without PUT",
+      "row": {
+        "provider": "caldav",
+        "action": "update",
+        "externalCalendarID": "https://p123-caldav.icloud.com/123/calendars/home/",
+        "payload": {},
+        "reconciling": true
+      },
+      "adapter": [
+        "assertEventWrite",
+        "readEvent",
+        "pushUpdate"
+      ],
+      "inspectNative": true,
+      "inspectCompletions": true,
+      "steps": [
+        {
+          "port": "db.getExternalLinkForCalendar",
+          "result": "<current-destination>"
+        },
+        {
+          "port": "db.hasEventOutboxRevisionCoverage",
+          "result": true
+        },
+        {
+          "port": "db.getEventOutboxExpectedRef",
+          "result": {
+            "externalEventId": "https://p123-caldav.icloud.com/123/calendars/home/fixture.ics",
+            "etag": "\"v1\"",
+            "icalUid": "fixture-uid"
+          }
+        },
+        {
+          "port": "native.readEvent",
+          "result": {
+            "ref": {
+              "externalEventId": "https://p123-caldav.icloud.com/123/calendars/home/fixture.ics",
+              "etag": "\"v2\"",
+              "icalUid": "fixture-uid"
+            },
+            "event": {
+              "id": "abcdef01-abcd-4000-8000-abcdefabcdea",
+              "creatorID": "fixture-owner",
+              "organizer": "fixture-owner",
+              "title": "Accepted title",
+              "color": "#112233",
+              "start": "2026-10-26T10:11:12.000Z",
+              "end": "2026-10-26T11:12:13.000Z",
+              "calendars": [
+                "fixture-calendar"
+              ],
+              "isCanceled": false,
+              "isAllDay": false,
+              "hasAttendees": false,
+              "description": "Keep description",
+              "location": "Keep location",
+              "externalId": "https://p123-caldav.icloud.com/123/calendars/home/fixture.ics",
+              "status": "active",
+              "recurrence": null,
+              "url": null,
+              "etag": "\"v2\"",
+              "icalUid": "fixture-uid"
+            }
+          }
+        },
+        {
+          "port": "db.completeEventOutbox",
+          "result": true
+        }
+      ],
+      "returnedStatus": "completed",
+      "expected": {
+        "boundary": "actual-event-delivery-with-fixture-db-and-native-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.getExternalLinkForCalendar",
+          "db.hasEventOutboxRevisionCoverage",
+          "db.getEventOutboxExpectedRef",
+          "native.readEvent",
+          "db.completeEventOutbox",
+          "db.get"
+        ],
+        "returnedStatus": "completed",
+        "completions": [
+          {
+            "port": "completeEventOutbox",
+            "args": [
+              "abcdef01-abcd-4000-8000-abcdefabcdef",
+              "fixture-lease",
+              {
+                "externalEventId": "https://p123-caldav.icloud.com/123/calendars/home/fixture.ics",
+                "etag": "\"v2\"",
+                "icalUid": "fixture-uid"
+              },
+              {
+                "externalEventId": "https://p123-caldav.icloud.com/123/calendars/home/fixture.ics",
+                "etag": "\"v1\"",
+                "icalUid": "fixture-uid"
+              },
+              null
+            ]
+          }
+        ],
+        "finishes": [],
+        "native": [
+          {
+            "method": "readEvent",
+            "args": [
+              "fixture-owner",
+              "fixture-account",
+              "https://p123-caldav.icloud.com/123/calendars/home/",
+              {
+                "externalEventId": "https://p123-caldav.icloud.com/123/calendars/home/fixture.ics",
+                "etag": "\"v1\"",
+                "icalUid": "fixture-uid"
+              },
+              "<signal>",
+              null
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "caldav-icloud-reconcile-unchanged-conditional-put",
+      "title": "iCloud unconfirmed mismatch on the unchanged accepted ETag re-preflights and sends one conditional PUT",
+      "row": {
+        "provider": "caldav",
+        "action": "update",
+        "externalCalendarID": "https://p123-caldav.icloud.com/123/calendars/home/",
+        "payload": {},
+        "reconciling": true
+      },
+      "adapter": [
+        "assertEventWrite",
+        "readEvent",
+        "pushUpdate"
+      ],
+      "inspectNative": true,
+      "inspectCompletions": true,
+      "steps": [
+        {
+          "port": "db.getExternalLinkForCalendar",
+          "result": "<current-destination>"
+        },
+        {
+          "port": "db.hasEventOutboxRevisionCoverage",
+          "result": true
+        },
+        {
+          "port": "db.getEventOutboxExpectedRef",
+          "result": {
+            "externalEventId": "https://p123-caldav.icloud.com/123/calendars/home/fixture.ics",
+            "etag": "\"v1\"",
+            "icalUid": "fixture-uid"
+          }
+        },
+        {
+          "port": "native.readEvent",
+          "result": {
+            "ref": {
+              "externalEventId": "https://p123-caldav.icloud.com/123/calendars/home/fixture.ics",
+              "etag": "\"v1\"",
+              "icalUid": "fixture-uid"
+            },
+            "event": {
+              "id": "abcdef01-abcd-4000-8000-abcdefabcdea",
+              "creatorID": "fixture-owner",
+              "organizer": "fixture-owner",
+              "title": "Old title",
+              "color": "#112233",
+              "start": "2026-10-26T10:11:12.000Z",
+              "end": "2026-10-26T11:12:13.000Z",
+              "calendars": [
+                "fixture-calendar"
+              ],
+              "isCanceled": false,
+              "isAllDay": false,
+              "hasAttendees": false,
+              "description": "Keep description",
+              "location": "Keep location",
+              "externalId": "https://p123-caldav.icloud.com/123/calendars/home/fixture.ics",
+              "status": "active",
+              "recurrence": null,
+              "url": null,
+              "etag": "\"v1\"",
+              "icalUid": "fixture-uid"
+            }
+          }
+        },
+        {
+          "port": "native.assertEventWrite"
+        },
+        {
+          "port": "db.getExternalLinkForCalendar",
+          "result": "<current-destination>"
+        },
+        {
+          "port": "native.pushUpdate",
+          "result": {
+            "etag": "\"v2\""
+          }
+        },
+        {
+          "port": "db.completeEventOutbox",
+          "result": true
+        }
+      ],
+      "returnedStatus": "completed",
+      "expected": {
+        "boundary": "actual-event-delivery-with-fixture-db-and-native-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.getExternalLinkForCalendar",
+          "db.hasEventOutboxRevisionCoverage",
+          "db.getEventOutboxExpectedRef",
+          "native.readEvent",
+          "native.assertEventWrite",
+          "db.getExternalLinkForCalendar",
+          "native.pushUpdate",
+          "db.completeEventOutbox",
+          "db.get"
+        ],
+        "returnedStatus": "completed",
+        "completions": [
+          {
+            "port": "completeEventOutbox",
+            "args": [
+              "abcdef01-abcd-4000-8000-abcdefabcdef",
+              "fixture-lease",
+              {
+                "externalEventId": "https://p123-caldav.icloud.com/123/calendars/home/fixture.ics",
+                "etag": "\"v2\"",
+                "icalUid": "fixture-uid"
+              },
+              {
+                "externalEventId": "https://p123-caldav.icloud.com/123/calendars/home/fixture.ics",
+                "etag": "\"v1\"",
+                "icalUid": "fixture-uid"
+              },
+              null
+            ]
+          }
+        ],
+        "finishes": [],
+        "native": [
+          {
+            "method": "readEvent",
+            "args": [
+              "fixture-owner",
+              "fixture-account",
+              "https://p123-caldav.icloud.com/123/calendars/home/",
+              {
+                "externalEventId": "https://p123-caldav.icloud.com/123/calendars/home/fixture.ics",
+                "etag": "\"v1\"",
+                "icalUid": "fixture-uid"
+              },
+              "<signal>",
+              null
+            ]
+          },
+          {
+            "method": "assertEventWrite",
+            "args": [
+              "fixture-owner",
+              "fixture-account",
+              "https://p123-caldav.icloud.com/123/calendars/home/",
+              {
+                "action": "update",
+                "event": {
+                  "id": "abcdef01-abcd-4000-8000-abcdefabcdea",
+                  "creatorID": "fixture-owner",
+                  "organizer": "fixture-owner",
+                  "title": "Accepted title",
+                  "color": "#112233",
+                  "start": "2026-10-26T10:11:12.123Z",
+                  "end": "2026-10-26T11:12:13.456Z",
+                  "calendars": [
+                    "fixture-calendar"
+                  ],
+                  "isCanceled": false,
+                  "isAllDay": false,
+                  "hasAttendees": false,
+                  "description": "Keep description",
+                  "location": "Keep location"
+                },
+                "external": {
+                  "externalEventId": "https://p123-caldav.icloud.com/123/calendars/home/fixture.ics",
+                  "etag": "\"v1\"",
+                  "icalUid": "fixture-uid"
+                },
+                "signal": "<signal>"
+              }
+            ]
+          },
+          {
+            "method": "pushUpdate",
+            "args": [
+              "fixture-owner",
+              "fixture-account",
+              "https://p123-caldav.icloud.com/123/calendars/home/",
+              "https://p123-caldav.icloud.com/123/calendars/home/fixture.ics",
+              {
+                "id": "abcdef01-abcd-4000-8000-abcdefabcdea",
+                "creatorID": "fixture-owner",
+                "organizer": "fixture-owner",
+                "title": "Accepted title",
+                "color": "#112233",
+                "start": "2026-10-26T10:11:12.123Z",
+                "end": "2026-10-26T11:12:13.456Z",
+                "calendars": [
+                  "fixture-calendar"
+                ],
+                "isCanceled": false,
+                "isAllDay": false,
+                "hasAttendees": false,
+                "description": "Keep description",
+                "location": "Keep location"
+              },
+              {
+                "externalEventId": "https://p123-caldav.icloud.com/123/calendars/home/fixture.ics",
+                "etag": "\"v1\"",
+                "icalUid": "fixture-uid"
+              },
+              null,
+              "<signal>",
+              null,
+              null
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "caldav-icloud-reconcile-changed-conflict",
+      "title": "iCloud unconfirmed mismatch with a changed ETag settles as conflict without PUT",
+      "row": {
+        "provider": "caldav",
+        "action": "update",
+        "externalCalendarID": "https://p123-caldav.icloud.com/123/calendars/home/",
+        "payload": {},
+        "reconciling": true
+      },
+      "adapter": [
+        "assertEventWrite",
+        "readEvent",
+        "pushUpdate"
+      ],
+      "inspectNative": true,
+      "inspectCompletions": true,
+      "steps": [
+        {
+          "port": "db.getExternalLinkForCalendar",
+          "result": "<current-destination>"
+        },
+        {
+          "port": "db.hasEventOutboxRevisionCoverage",
+          "result": true
+        },
+        {
+          "port": "db.getEventOutboxExpectedRef",
+          "result": {
+            "externalEventId": "https://p123-caldav.icloud.com/123/calendars/home/fixture.ics",
+            "etag": "\"v1\"",
+            "icalUid": "fixture-uid"
+          }
+        },
+        {
+          "port": "native.readEvent",
+          "result": {
+            "ref": {
+              "externalEventId": "https://p123-caldav.icloud.com/123/calendars/home/fixture.ics",
+              "etag": "\"v9\"",
+              "icalUid": "fixture-uid"
+            },
+            "event": {
+              "id": "abcdef01-abcd-4000-8000-abcdefabcdea",
+              "creatorID": "fixture-owner",
+              "organizer": "fixture-owner",
+              "title": "Concurrent",
+              "color": "#112233",
+              "start": "2026-10-26T10:11:12.000Z",
+              "end": "2026-10-26T11:12:13.000Z",
+              "calendars": [
+                "fixture-calendar"
+              ],
+              "isCanceled": false,
+              "isAllDay": false,
+              "hasAttendees": false,
+              "description": "Keep description",
+              "location": "Keep location",
+              "externalId": "https://p123-caldav.icloud.com/123/calendars/home/fixture.ics",
+              "status": "active",
+              "recurrence": null,
+              "url": null,
+              "etag": "\"v9\"",
+              "icalUid": "fixture-uid"
+            }
+          }
+        },
+        {
+          "port": "db.finishEventOutbox"
+        }
+      ],
+      "returnedStatus": "conflict",
+      "expected": {
+        "boundary": "actual-event-delivery-with-fixture-db-and-native-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.getExternalLinkForCalendar",
+          "db.hasEventOutboxRevisionCoverage",
+          "db.getEventOutboxExpectedRef",
+          "native.readEvent",
+          "db.finishEventOutbox",
+          "db.get"
+        ],
+        "returnedStatus": "conflict",
+        "completions": [],
+        "finishes": [
+          {
+            "status": "conflict",
+            "code": "provider-conflict",
+            "details": {
+              "uncertain": true,
+              "nextAttemptAt": "<time>",
+              "remoteSnapshot": {
+                "externalEventId": "https://p123-caldav.icloud.com/123/calendars/home/fixture.ics",
+                "etag": "\"v9\"",
+                "icalUid": "fixture-uid",
+                "deleted": false,
+                "observedAt": "<time>",
+                "values": {
+                  "id": "abcdef01-abcd-4000-8000-abcdefabcdea",
+                  "creatorID": "fixture-owner",
+                  "organizer": "fixture-owner",
+                  "title": "Concurrent",
+                  "color": "#112233",
+                  "start": "2026-10-26T10:11:12.000Z",
+                  "end": "2026-10-26T11:12:13.000Z",
+                  "calendars": [
+                    "fixture-calendar"
+                  ],
+                  "isCanceled": false,
+                  "isAllDay": false,
+                  "hasAttendees": false,
+                  "description": "Keep description",
+                  "location": "Keep location",
+                  "externalId": "https://p123-caldav.icloud.com/123/calendars/home/fixture.ics",
+                  "status": "active",
+                  "recurrence": null,
+                  "url": null,
+                  "etag": "\"v9\"",
+                  "icalUid": "fixture-uid"
+                }
+              }
+            }
+          }
+        ],
+        "native": [
+          {
+            "method": "readEvent",
+            "args": [
+              "fixture-owner",
+              "fixture-account",
+              "https://p123-caldav.icloud.com/123/calendars/home/",
+              {
+                "externalEventId": "https://p123-caldav.icloud.com/123/calendars/home/fixture.ics",
+                "etag": "\"v1\"",
+                "icalUid": "fixture-uid"
+              },
+              "<signal>",
+              null
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "caldav-icloud-reconcile-read-unconfirmed",
+      "title": "iCloud reconciliation read failure stays unconfirmed without PUT",
+      "row": {
+        "provider": "caldav",
+        "action": "update",
+        "externalCalendarID": "https://p123-caldav.icloud.com/123/calendars/home/",
+        "payload": {},
+        "reconciling": true
+      },
+      "adapter": [
+        "assertEventWrite",
+        "readEvent",
+        "pushUpdate"
+      ],
+      "inspectNative": true,
+      "inspectCompletions": true,
+      "steps": [
+        {
+          "port": "db.getExternalLinkForCalendar",
+          "result": "<current-destination>"
+        },
+        {
+          "port": "db.hasEventOutboxRevisionCoverage",
+          "result": true
+        },
+        {
+          "port": "db.getEventOutboxExpectedRef",
+          "result": {
+            "externalEventId": "https://p123-caldav.icloud.com/123/calendars/home/fixture.ics",
+            "etag": "\"v1\"",
+            "icalUid": "fixture-uid"
+          }
+        },
+        {
+          "port": "native.readEvent",
+          "error": {
+            "code": "provider-write-failed",
+            "outcome": "unconfirmed"
+          }
+        },
+        {
+          "port": "db.finishEventOutbox"
+        }
+      ],
+      "returnedStatus": "unconfirmed",
+      "expected": {
+        "boundary": "actual-event-delivery-with-fixture-db-and-native-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.getExternalLinkForCalendar",
+          "db.hasEventOutboxRevisionCoverage",
+          "db.getEventOutboxExpectedRef",
+          "native.readEvent",
+          "db.finishEventOutbox",
+          "db.get"
+        ],
+        "returnedStatus": "unconfirmed",
+        "completions": [],
+        "finishes": [
+          {
+            "status": "unconfirmed",
+            "code": "provider-write-failed",
+            "details": {
+              "uncertain": true,
+              "nextAttemptAt": "<time>"
+            }
+          }
+        ],
+        "native": [
+          {
+            "method": "readEvent",
+            "args": [
+              "fixture-owner",
+              "fixture-account",
+              "https://p123-caldav.icloud.com/123/calendars/home/",
+              {
+                "externalEventId": "https://p123-caldav.icloud.com/123/calendars/home/fixture.ics",
+                "etag": "\"v1\"",
+                "icalUid": "fixture-uid"
+              },
+              "<signal>",
+              null
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "caldav-icloud-reconcile-null-etag-never-acked",
+      "title": "iCloud matching observation without a strong ETag is never ACKed and sends no PUT",
+      "row": {
+        "provider": "caldav",
+        "action": "update",
+        "externalCalendarID": "https://p123-caldav.icloud.com/123/calendars/home/",
+        "payload": {},
+        "reconciling": true
+      },
+      "adapter": [
+        "assertEventWrite",
+        "readEvent",
+        "pushUpdate"
+      ],
+      "inspectNative": true,
+      "inspectCompletions": true,
+      "steps": [
+        {
+          "port": "db.getExternalLinkForCalendar",
+          "result": "<current-destination>"
+        },
+        {
+          "port": "db.hasEventOutboxRevisionCoverage",
+          "result": true
+        },
+        {
+          "port": "db.getEventOutboxExpectedRef",
+          "result": {
+            "externalEventId": "https://p123-caldav.icloud.com/123/calendars/home/fixture.ics",
+            "etag": "\"v1\"",
+            "icalUid": "fixture-uid"
+          }
+        },
+        {
+          "port": "native.readEvent",
+          "result": {
+            "ref": {
+              "externalEventId": "https://p123-caldav.icloud.com/123/calendars/home/fixture.ics",
+              "etag": null,
+              "icalUid": "fixture-uid"
+            },
+            "event": {
+              "id": "abcdef01-abcd-4000-8000-abcdefabcdea",
+              "creatorID": "fixture-owner",
+              "organizer": "fixture-owner",
+              "title": "Accepted title",
+              "color": "#112233",
+              "start": "2026-10-26T10:11:12.000Z",
+              "end": "2026-10-26T11:12:13.000Z",
+              "calendars": [
+                "fixture-calendar"
+              ],
+              "isCanceled": false,
+              "isAllDay": false,
+              "hasAttendees": false,
+              "description": "Keep description",
+              "location": "Keep location",
+              "externalId": "https://p123-caldav.icloud.com/123/calendars/home/fixture.ics",
+              "status": "active",
+              "recurrence": null,
+              "url": null,
+              "etag": null,
+              "icalUid": "fixture-uid"
+            }
+          }
+        },
+        {
+          "port": "db.getCaldavAccountById",
+          "result": {
+            "serverUrl": "https://caldav.icloud.com/",
+            "username": "fixture",
+            "encryptedPassword": "fixture"
+          }
+        },
+        {
+          "port": "db.finishEventOutbox"
+        }
+      ],
+      "returnedStatus": "unconfirmed",
+      "expected": {
+        "boundary": "actual-event-delivery-with-fixture-db-and-native-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.getExternalLinkForCalendar",
+          "db.hasEventOutboxRevisionCoverage",
+          "db.getEventOutboxExpectedRef",
+          "native.readEvent",
+          "db.getCaldavAccountById",
+          "db.finishEventOutbox",
+          "db.get"
+        ],
+        "returnedStatus": "unconfirmed",
+        "completions": [],
+        "finishes": [
+          {
+            "status": "unconfirmed",
+            "code": "provider-write-failed",
+            "details": {
+              "uncertain": true,
+              "nextAttemptAt": "<time>"
+            }
+          }
+        ],
+        "native": [
+          {
+            "method": "readEvent",
+            "args": [
+              "fixture-owner",
+              "fixture-account",
+              "https://p123-caldav.icloud.com/123/calendars/home/",
+              {
+                "externalEventId": "https://p123-caldav.icloud.com/123/calendars/home/fixture.ics",
+                "etag": "\"v1\"",
+                "icalUid": "fixture-uid"
+              },
+              "<signal>",
+              null
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "caldav-icloud-reconcile-missing-account-fails-closed",
+      "title": "Missing CalDAV account at the strong-ETag seam fails closed as unconfirmed",
+      "row": {
+        "provider": "caldav",
+        "action": "update",
+        "externalCalendarID": "https://p123-caldav.icloud.com/123/calendars/home/",
+        "payload": {},
+        "reconciling": true
+      },
+      "adapter": [
+        "assertEventWrite",
+        "readEvent",
+        "pushUpdate"
+      ],
+      "inspectNative": true,
+      "inspectCompletions": true,
+      "steps": [
+        {
+          "port": "db.getExternalLinkForCalendar",
+          "result": "<current-destination>"
+        },
+        {
+          "port": "db.hasEventOutboxRevisionCoverage",
+          "result": true
+        },
+        {
+          "port": "db.getEventOutboxExpectedRef",
+          "result": {
+            "externalEventId": "https://p123-caldav.icloud.com/123/calendars/home/fixture.ics",
+            "etag": "\"v1\"",
+            "icalUid": "fixture-uid"
+          }
+        },
+        {
+          "port": "native.readEvent",
+          "result": {
+            "ref": {
+              "externalEventId": "https://p123-caldav.icloud.com/123/calendars/home/fixture.ics",
+              "etag": null,
+              "icalUid": "fixture-uid"
+            },
+            "event": {
+              "id": "abcdef01-abcd-4000-8000-abcdefabcdea",
+              "creatorID": "fixture-owner",
+              "organizer": "fixture-owner",
+              "title": "Accepted title",
+              "color": "#112233",
+              "start": "2026-10-26T10:11:12.000Z",
+              "end": "2026-10-26T11:12:13.000Z",
+              "calendars": [
+                "fixture-calendar"
+              ],
+              "isCanceled": false,
+              "isAllDay": false,
+              "hasAttendees": false,
+              "description": "Keep description",
+              "location": "Keep location",
+              "externalId": "https://p123-caldav.icloud.com/123/calendars/home/fixture.ics",
+              "status": "active",
+              "recurrence": null,
+              "url": null,
+              "etag": null,
+              "icalUid": "fixture-uid"
+            }
+          }
+        },
+        {
+          "port": "db.getCaldavAccountById",
+          "result": null
+        },
+        {
+          "port": "db.finishEventOutbox"
+        }
+      ],
+      "returnedStatus": "unconfirmed",
+      "expected": {
+        "boundary": "actual-event-delivery-with-fixture-db-and-native-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.getExternalLinkForCalendar",
+          "db.hasEventOutboxRevisionCoverage",
+          "db.getEventOutboxExpectedRef",
+          "native.readEvent",
+          "db.getCaldavAccountById",
+          "db.finishEventOutbox",
+          "db.get"
+        ],
+        "returnedStatus": "unconfirmed",
+        "completions": [],
+        "finishes": [
+          {
+            "status": "unconfirmed",
+            "code": "provider-write-failed",
+            "details": {
+              "uncertain": true,
+              "nextAttemptAt": "<time>"
+            }
+          }
+        ],
+        "native": [
+          {
+            "method": "readEvent",
+            "args": [
+              "fixture-owner",
+              "fixture-account",
+              "https://p123-caldav.icloud.com/123/calendars/home/",
+              {
+                "externalEventId": "https://p123-caldav.icloud.com/123/calendars/home/fixture.ics",
+                "etag": "\"v1\"",
+                "icalUid": "fixture-uid"
+              },
+              "<signal>",
+              null
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "caldav-generic-reconcile-null-etag-unchanged",
+      "title": "Non-iCloud CalDAV matching observation keeps the existing null-ETag completion",
+      "row": {
+        "provider": "caldav",
+        "action": "update",
+        "externalCalendarID": "https://dav.example.test/cal/",
+        "payload": {},
+        "reconciling": true
+      },
+      "adapter": [
+        "assertEventWrite",
+        "readEvent",
+        "pushUpdate"
+      ],
+      "inspectNative": true,
+      "inspectCompletions": true,
+      "steps": [
+        {
+          "port": "db.getExternalLinkForCalendar",
+          "result": "<current-destination>"
+        },
+        {
+          "port": "db.hasEventOutboxRevisionCoverage",
+          "result": true
+        },
+        {
+          "port": "db.getEventOutboxExpectedRef",
+          "result": {
+            "externalEventId": "https://dav.example.test/cal/fixture.ics",
+            "etag": "\"v1\"",
+            "icalUid": "fixture-uid"
+          }
+        },
+        {
+          "port": "native.readEvent",
+          "result": {
+            "ref": {
+              "externalEventId": "https://dav.example.test/cal/fixture.ics",
+              "etag": null,
+              "icalUid": "fixture-uid"
+            },
+            "event": {
+              "id": "abcdef01-abcd-4000-8000-abcdefabcdea",
+              "creatorID": "fixture-owner",
+              "organizer": "fixture-owner",
+              "title": "Accepted title",
+              "color": "#112233",
+              "start": "2026-10-26T10:11:12.000Z",
+              "end": "2026-10-26T11:12:13.000Z",
+              "calendars": [
+                "fixture-calendar"
+              ],
+              "isCanceled": false,
+              "isAllDay": false,
+              "hasAttendees": false,
+              "description": "Keep description",
+              "location": "Keep location",
+              "externalId": "https://dav.example.test/cal/fixture.ics",
+              "status": "active",
+              "recurrence": null,
+              "url": null,
+              "etag": null,
+              "icalUid": "fixture-uid"
+            }
+          }
+        },
+        {
+          "port": "db.getCaldavAccountById",
+          "result": {
+            "serverUrl": "https://dav.example.test/",
+            "username": "fixture",
+            "encryptedPassword": "fixture"
+          }
+        },
+        {
+          "port": "db.completeEventOutbox",
+          "result": true
+        }
+      ],
+      "returnedStatus": "completed",
+      "expected": {
+        "boundary": "actual-event-delivery-with-fixture-db-and-native-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.getExternalLinkForCalendar",
+          "db.hasEventOutboxRevisionCoverage",
+          "db.getEventOutboxExpectedRef",
+          "native.readEvent",
+          "db.getCaldavAccountById",
+          "db.completeEventOutbox",
+          "db.get"
+        ],
+        "returnedStatus": "completed",
+        "completions": [
+          {
+            "port": "completeEventOutbox",
+            "args": [
+              "abcdef01-abcd-4000-8000-abcdefabcdef",
+              "fixture-lease",
+              {
+                "externalEventId": "https://dav.example.test/cal/fixture.ics",
+                "etag": null,
+                "icalUid": "fixture-uid"
+              },
+              {
+                "externalEventId": "https://dav.example.test/cal/fixture.ics",
+                "etag": "\"v1\"",
+                "icalUid": "fixture-uid"
+              },
+              null
+            ]
+          }
+        ],
+        "finishes": [],
+        "native": [
+          {
+            "method": "readEvent",
+            "args": [
+              "fixture-owner",
+              "fixture-account",
+              "https://dav.example.test/cal/",
+              {
+                "externalEventId": "https://dav.example.test/cal/fixture.ics",
+                "etag": "\"v1\"",
+                "icalUid": "fixture-uid"
+              },
+              "<signal>",
+              null
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "caldav-update-unpinned-link-disabled-cancelled",
+      "title": "Unpinned row with a disabled link is cancelled by the host destination guard before preflight",
+      "row": {
+        "provider": "caldav",
+        "action": "update",
+        "externalCalendarID": "https://p123-caldav.icloud.com/123/calendars/home/",
+        "payload": {}
+      },
+      "adapter": [
+        "assertEventWrite",
+        "pushUpdate"
+      ],
+      "inspectNative": true,
+      "steps": [
+        {
+          "port": "db.getExternalLinkForCalendar",
+          "result": {
+            "id": "fixture-source",
+            "calendarID": "fixture-calendar",
+            "userID": "fixture-owner",
+            "accountID": "fixture-account",
+            "provider": "caldav",
+            "externalCalendarID": "https://p123-caldav.icloud.com/123/calendars/home/",
+            "disabled": true,
+            "supportsEvents": true
+          }
+        },
+        {
+          "port": "db.finishEventOutbox"
+        }
+      ],
+      "returnedStatus": "completed",
+      "expected": {
+        "boundary": "actual-event-delivery-with-fixture-db-and-native-ports",
+        "events": [
+          "db.claim",
+          "db.decode",
+          "db.getExternalLinkForCalendar",
+          "db.finishEventOutbox",
+          "db.get"
+        ],
+        "returnedStatus": "completed",
+        "completions": [],
+        "finishes": [
+          {
+            "status": "cancelled",
+            "code": "destination-disconnected",
+            "details": {
+              "uncertain": false
+            }
+          }
+        ],
+        "native": []
+      }
+    },
+    {
       "id": "legacy-create-recovery-without-identity-holds",
       "title": "legacy create recovery without identity holds",
       "row": {

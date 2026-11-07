@@ -14,7 +14,7 @@ import type {
 export * from "./types";
 export { strongCaldavEtag } from "./native-etag";
 export { createCaldavPersonalEventCreateProvider, caldavPersonalCreateIdentityV1, normalizeCaldavCreateProjection } from "./create";
-export { selectCaldavEventMaster, strictCaldavResourceURL, validateCaldavPhysicalResource } from "./native-event";
+export { assertStrictCaldavPersonalResource, selectCaldavEventMaster, strictCaldavResourceURL, validateCaldavPhysicalResource } from "./native-event";
 
 const failed = () => new CaldavProviderError("provider-write-failed");
 function record(value: unknown): Record<string, unknown> {

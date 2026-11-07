@@ -1,5 +1,5 @@
 import { isIcloudRsvpDestination } from "@musubi/types";
-import { CaldavProviderError, selectCaldavEventMaster } from "@musubi/provider-caldav";
+import { assertStrictCaldavPersonalResource, CaldavProviderError, selectCaldavEventMaster } from "@musubi/provider-caldav";
 import { lookup } from "node:dns/promises";
 import { isCaldavPersonalContentOperation, isIcloudPersonalContentDestination, type CaldavPersonalContentOperation } from "../caldav_personal_content";
 import { caldavOrganizerTransport } from "./caldav_organizer_delivery";
@@ -18,6 +18,8 @@ import { caldavRdateEdit, caldavExdateRestoration, finiteSeriesFootprint, planEv
 import { randomUUID } from "crypto";
 import type { DAVCalendar, DAVCalendarObject } from "tsdav";
 import {
+  can,
+  hasKnownEventTime,
   EventWriteError,
   EventScopeRequestSchema,
   EventSchema,
@@ -41,11 +43,13 @@ import {
   getOwnedCaldavAccountBinding,
   getCaldavAccountsByUser,
   getUserExternalCalendars,
+  getUserRoleForCalendar,
   type EventContentPatch,
 } from "@musubi/db";
 import type {
   CalendarAdapter,
   CaldavPersonalCreateV1Bridge,
+  EventWriteOperation,
   CalendarDiscoveryResult,
   ExternalEventRef,
   ExternalTaskRef,
@@ -130,10 +134,16 @@ async function clientForAccount(userID: string, accountId: string, signal?: Abor
 // color namespace and MKCALENDAR body under our control.
 const caldavFetch = createGuardedCaldavFetch();
 
-async function basicAuthForAccount(accountId: string) {
+/** One account read yields both the endpoint (for destination class) and the
+ * request credential; callers that need only the credential keep one read. */
+async function caldavAccountAuthorization(accountId: string) {
   const acc = await getCaldavAccountById(accountId);
   if (!acc) throw new Error("CalDAV account not found");
-  return `Basic ${Buffer.from(`${acc.username}:${decryptSecret(acc.encryptedPassword)}`).toString("base64")}`;
+  return { serverUrl: acc.serverUrl, authorization: `Basic ${Buffer.from(`${acc.username}:${decryptSecret(acc.encryptedPassword)}`).toString("base64")}` };
+}
+
+async function basicAuthForAccount(accountId: string) {
+  return (await caldavAccountAuthorization(accountId)).authorization;
 }
 
 const escapeXml = (s: string) =>
@@ -1293,15 +1303,143 @@ async function resourceAuthorization(userID: string, accountId: string, external
   const resource = caldavSeriesResourceURL(externalCalendarId, intent.ref.externalEventId);
   const authorization = await basicAuthForAccount(accountId);
   const account = accounts.find(account => account.id === accountId)!;
-  const eligible = config.api.icloudPersonalContentWritesEnabled && action === "update"
-    && isCaldavPersonalContentOperation(operation)
-    && isIcloudPersonalContentDestination(account.serverUrl, externalCalendarId, resource.href);
+  const eligible = icloudPersonalContentEligible(account.serverUrl, externalCalendarId, resource.href, action, operation);
   const permission = await caldavEventWritePermission(action !== "update" ? externalCalendarId : resource.href, authorization, signal, "error");
   const allowed = caldavAllows(permission.privileges, action);
   // An explicit privilege set without write-content is always a denial. Only
   // narrowly identified missing-property evidence can use the iCloud fallback.
-  assertEventWriteEvidence(allowed === undefined && eligible && permission.missing ? true : allowed, "event-write");
+  assertEventWriteEvidence(eligible && icloudResourceAclMissing(permission) ? true : allowed, "event-write");
   return { resource, authorization };
+}
+
+/** Shared eligible-missing core of the approved iCloud fallback: flag, content
+ * update, verified iCloud destination. Callers keep their own gates and order. */
+function icloudPersonalContentEligible(accountServerURL: string, externalCalendarId: string, resourceURL: string, action: "update" | "delete" | "create", operation: unknown) {
+  return config.api.icloudPersonalContentWritesEnabled === true && action === "update"
+    && isCaldavPersonalContentOperation(operation)
+    && isIcloudPersonalContentDestination(accountServerURL, externalCalendarId, resourceURL);
+}
+/** Only an explicit empty 404 propstat is "missing"; never a grant by itself. */
+function icloudResourceAclMissing(permission: { privileges: Set<string> | undefined; missing: boolean }) {
+  return caldavAllows(permission.privileges, "update") === undefined && permission.missing;
+}
+
+const ICLOUD_LEGACY_CONTENT_PROPERTIES = new Set(["summary", "description", "location"]);
+/** The guarded transport's exact redirect refusal (provider-caldav network.ts).
+ * Aborts, timeouts and every other untyped error keep their existing handling. */
+function isCaldavScopedRedirectRefusal(error: unknown, signal?: AbortSignal) {
+  return !signal?.aborted && error instanceof Error && error.constructor === Error && error.name === "Error"
+    && error.message === "CalDAV scoped resource request cannot redirect.";
+}
+
+/** Phase A (eligibility, never a refusal): a legacy-unknown-time timed one-off
+ * content update of a verified iCloud destination. Pure checks over the call's
+ * own inputs and the already-read account endpoint; any miss keeps the existing
+ * legacy preflight byte-identical. Re-derived at handler and worker preflight. */
+function icloudLegacyContentEligible(accountServerURL: string, externalCalendarId: string, operation: EventWriteOperation) {
+  if (config.api.icloudPersonalContentWritesEnabled !== true) return false;
+  if (operation.action !== "update" || !operation.external) return false;
+  if (!isCaldavPersonalContentOperation({ patch: operation.patch }) || operation.scopeEditValidated) return false;
+  const plan = operation.nativePlan;
+  if (plan && (plan.planKind !== "caldav-properties" || plan.component !== "VEVENT" || plan.properties.some(name => !ICLOUD_LEGACY_CONTENT_PROPERTIES.has(name)))) return false;
+  const event = operation.event;
+  if (hasKnownEventTime(event) || event.recurrence != null || event.seriesID || event.originalStart || event.hasAttendees || event.isMeeting === true || event.isCanceled) return false;
+  if (!operation.external.icalUid || strongEventEtag(operation.external.etag) === null) return false;
+  return icloudPersonalContentEligible(accountServerURL, externalCalendarId, operation.external.externalEventId, "update", { patch: operation.patch });
+}
+
+/** Phase B (refusals, eligible requests only). Returns "granted" when the
+ * resource ACL affirmatively grants write-content (the existing legacy path
+ * continues), or "deferred" when every gate holds over a missing resource ACL
+ * and the conditional PUT remains the provider authority. Nothing is persisted. */
+async function icloudLegacyContentAuthorization(userID: string, accountId: string, externalCalendarId: string, operation: EventWriteOperation, authorization: string): Promise<"granted" | "deferred"> {
+  const external = operation.external!, signal = operation.signal;
+  const unknown = () => new EventWriteError("event-write", "unknown"), denied = () => new EventWriteError("event-write", "denied");
+  // 1. Ownership: owned account, exactly one event link for this collection,
+  // its current link row enabled and matching, and the event on that calendar.
+  if (!(await getCaldavAccountsByUser(userID)).some(account => account.id === accountId)) throw unknown();
+  const links = (await getUserExternalCalendars("caldav", userID, accountId)).filter(link => link.supportsEvents && link.externalCalendarID === externalCalendarId);
+  if (links.length !== 1) throw unknown();
+  const calendarID = links[0]!.calendarID;
+  const link = await getExternalLinkForCalendar(calendarID);
+  if (!link || link.disabled || !link.supportsEvents || link.userID !== userID || link.provider !== "caldav" || link.accountID !== accountId || link.externalCalendarID !== externalCalendarId
+      || !operation.event.calendars.includes(calendarID)) throw unknown();
+  // 2. Role of the link owner on the linked calendar.
+  if (!can(await getUserRoleForCalendar(userID, calendarID), "editEvents")) throw denied();
+  // 3. Strict resource URL inside the collection; no request otherwise.
+  let resource: URL;
+  try { resource = caldavSeriesResourceURL(externalCalendarId, external.externalEventId); }
+  catch { throw unknown(); }
+  try {
+    // 4. Resource ACL. Only explicit missing evidence continues.
+    const permission = await caldavEventWritePermission(resource.href, authorization, signal, "error");
+    const allowed = caldavAllows(permission.privileges, "update");
+    if (allowed === true) return "granted";
+    if (allowed === false) throw denied();
+    if (!icloudResourceAclMissing(permission)) throw unknown();
+    // 5. Fresh collection grant (discovery predicate): necessary, never sufficient.
+    const collection = await caldavEventWritePermission(externalCalendarId, authorization, signal, "error");
+    if (!collection.privileges || collection.missing) throw unknown();
+    if (!(["create", "update", "delete"] as const).some(action => caldavAllows(collection.privileges, action) === true)) throw denied();
+    // 6. Complete GET with the accepted strong ETag and UID, then strict shape.
+    const current = await readEventResource(authorization, resource.href, external, signal, "error");
+    let selected: ReturnType<typeof selectCaldavEventMaster>;
+    try {
+      selected = selectCaldavEventMaster(current.data, external.icalUid);
+      assertStrictCaldavPersonalResource(selected);
+    } catch (error) {
+      if (error instanceof CaldavProviderError && error.code === "capability-evidence") throw new EventWriteError("event-write", "unsupported");
+      if (error instanceof CaldavProviderError) throw new ProviderEventWriteError("provider-write-failed", error.outcome, error.providerStatus, error.retryAfterMs);
+      throw error;
+    }
+    if (selected.master.getAllProperties("organizer").length) throw new EventWriteError("event-write", "unsupported");
+    // Exercise the exact preserving transformation before any local commit.
+    if (operation.nativePlan) applyCaldavEventPlanV1(current.data, pinnedCaldavPlanV1(operation.nativePlan, "VEVENT", current.uid));
+    else patchEventIcal(current.data, operation.event, current.uid, operation.patch);
+  } catch (error) {
+    if (isCaldavScopedRedirectRefusal(error, signal)) throw unknown();
+    throw error;
+  }
+  logger.info("caldav.write_permission_deferred", { provider: "caldav", action: "update" });
+  return "deferred";
+}
+
+/** Every legacy update of an iCloud-class destination: strict URL, redirect
+ * refusal, accepted strong ETag, If-Match PUT and a complete readback whose own
+ * strong ETag is the only one adopted. Never repeats a write blindly. */
+async function pushIcloudLegacyContentUpdate(authorization: string, externalCalendarId: string, externalEventId: string, event: Event, ref: ExternalEventRef | undefined, patch: EventContentPatch | undefined, signal?: AbortSignal, nativePlan?: NativeWritePlanV1) {
+  const resource = caldavSeriesResourceURL(externalCalendarId, externalEventId);
+  let current: Awaited<ReturnType<typeof readEventResource>>;
+  try { current = await readEventResource(authorization, resource.href, ref, signal, "error"); }
+  catch (error) {
+    if (isCaldavScopedRedirectRefusal(error, signal)) throw new ProviderEventWriteError("provider-conflict");
+    throw error;
+  }
+  const data = nativePlan
+    ? applyCaldavEventPlanV1(current.data, pinnedCaldavPlanV1(nativePlan, "VEVENT", current.uid))
+    : patchEventIcal(current.data, event, current.uid, patch);
+  if (data === current.data) return; // Known no-op; retain accepted validator.
+  let accepted = false;
+  try {
+    const response = await caldavFetch(resource.href, {
+      signal, redirect: "error", method: "PUT",
+      headers: { authorization, "Content-Type": "text/calendar; charset=utf-8", "If-Match": current.etag },
+      body: data,
+    });
+    assertProviderEventMutationResponse(response);
+    accepted = true;
+    const confirmed = await readEventResource(authorization, resource.href, ref, signal, "error", true);
+    // A mismatch after acceptance is not a provider conflict: reconcile by read.
+    if (!sameCaldavResource(confirmed.data, data)) throw new ProviderEventWriteError("provider-write-failed", "unconfirmed");
+    return { etag: confirmed.etag, icalUid: current.uid };
+  } catch (error) {
+    if (providerDeferral(error)) throw error;
+    if (!accepted && error instanceof ProviderEventWriteError && error.providerStatus !== undefined) throw error;
+    if (error instanceof ProviderEventWriteError && error.outcome === "unconfirmed") throw error;
+    // Network errors, redirects and failed post-write reads cannot prove that
+    // the PUT did not happen. Reconcile the same durable input on retry.
+    throw new ProviderEventWriteError("provider-write-failed", "unconfirmed", error instanceof ProviderEventWriteError ? error.providerStatus : undefined);
+  }
 }
 
 export function prepareCaldavSeriesDeletion(evidence: CaldavSeriesEvidence, baseline: CaldavSeriesIntent): CaldavSeriesDeletion {
@@ -1694,17 +1832,21 @@ export const caldavAdapter: CalendarAdapter = scopeCalendarAdapter({
   },
 
   async assertEventWrite(_userID, accountId, externalCalendarId, operation) {
-    const authorization = await basicAuthForAccount(accountId);
-    // DAV bind/unbind belong to the collection; write-content to the resource.
-    const target =
-      operation.action === "update" && operation.external
-        ? operation.external.externalEventId
-        : externalCalendarId;
-    const privileges = await caldavEventPrivileges(target, authorization, operation.signal);
-    assertEventWriteEvidence(
-      caldavAllows(privileges, operation.action),
-      "event-write",
-    );
+    const { serverUrl, authorization } = await caldavAccountAuthorization(accountId);
+    if (icloudLegacyContentEligible(serverUrl, externalCalendarId, operation)) {
+      if (await icloudLegacyContentAuthorization(_userID, accountId, externalCalendarId, operation, authorization) === "deferred") return;
+    } else {
+      // DAV bind/unbind belong to the collection; write-content to the resource.
+      const target =
+        operation.action === "update" && operation.external
+          ? operation.external.externalEventId
+          : externalCalendarId;
+      const privileges = await caldavEventPrivileges(target, authorization, operation.signal);
+      assertEventWriteEvidence(
+        caldavAllows(privileges, operation.action),
+        "event-write",
+      );
+    }
     if (operation.action !== "create" && operation.external) {
       {
         const { data, uid, master } = await readEventResource(
@@ -1867,7 +2009,9 @@ export const caldavAdapter: CalendarAdapter = scopeCalendarAdapter({
   ) {
     requireEventPatch(patch);
     requireEventEtag(ref?.etag);
-    const authorization = await basicAuthForAccount(accountId);
+    const { serverUrl, authorization } = await caldavAccountAuthorization(accountId);
+    if (isIcloudPersonalContentDestination(serverUrl, _externalCalendarId, externalEventId))
+      return pushIcloudLegacyContentUpdate(authorization, _externalCalendarId, externalEventId, event, ref, patch, signal, nativePlan);
     const current = await readEventResource(
       authorization,
       externalEventId,
