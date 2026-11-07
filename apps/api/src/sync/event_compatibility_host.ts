@@ -35,6 +35,7 @@ import {
   getEventOutboxExpectedRef,
   getEventOutboxRow,
   getExternalLinkForCalendar,
+  getCaldavAccountById,
   hasEventOutboxRevisionCoverage,
   renewEventOutboxLease,
   setEventOutboxProjection,
@@ -55,6 +56,7 @@ import {
   googleEventCreateID,
 } from "./event_create_identity";
 import { ProviderEventWriteError, strongEventEtag } from "./event_write";
+import { isIcloudPersonalContentDestination } from "./caldav_personal_content";
 import { deliveryNextAttemptAt, validateDeliveryAttemptOptions } from "./delivery_policy";
 import { withProviderCallMetrics } from "./provider_http_metrics";
 import { parseNativeWritePlanV1 } from "@musubi/sync-codec";
@@ -417,7 +419,21 @@ export function eventCompatibilityPorts(original: EventOutboxRow & { reconciling
   const native: EventCompatibilityNativePorts = {
     async read(input, signal) {
       let value: EventCompatibilityObservation | null;
-      if (input.family === "generic") { if (!adapter?.readEvent) unsupported(); const evidence = own(await adapter!.readEvent!(row.userID, row.accountID, row.externalCalendarID, own(input.ref, false), signal, input.acceptedUpdate)); value = evidence ? { ref: evidence.ref, event: evidence.event } : null; }
+      if (input.family === "generic") {
+        if (!adapter?.readEvent) unsupported();
+        const evidence = own(await adapter!.readEvent!(row.userID, row.accountID, row.externalCalendarID, own(input.ref, false), signal, input.acceptedUpdate));
+        // iCloud-class CalDAV update delivery reads only: a present observation
+        // without a strong ETag can never be ACKed or used as a PUT baseline. A
+        // missing account fails closed. Other providers, delete rows and every
+        // non-delivery adapter.readEvent caller are unchanged.
+        if (evidence && row.provider === "caldav" && row.action === "update" && !strongEventEtag(evidence.ref.etag)) {
+          const account = await getCaldavAccountById(row.accountID);
+          signal.throwIfAborted();
+          if (!account || isIcloudPersonalContentDestination(account.serverUrl, row.externalCalendarID, input.ref.externalEventId))
+            throw new ProviderEventWriteError("provider-write-failed", "unconfirmed");
+        }
+        value = evidence ? { ref: evidence.ref, event: evidence.event } : null;
+      }
       else if (input.family === "find-created") { const evidence = own(await adapter!.findCreatedEvent!(row.userID, row.accountID, row.externalCalendarID, input.identity)); value = evidence ? { ref: evidence.ref, event: evidence.event } : null; }
       else if (input.family === "googleOccurrence") { const read = input.recover ? adapter?.recoverOccurrence : adapter?.readOccurrence; if (!read) unsupported(); value = await read!(row.userID, row.accountID, row.externalCalendarID, own(occurrence!, false), own(input.ref, false), signal); }
       else value = await adapter!.readReminderState!(row.userID, row.accountID, row.externalCalendarID, own(input.ref, false), signal);

@@ -37,6 +37,17 @@ automatically loaded by Compose or the API.
 | CALDAV_ALARM_EDITS_ENABLED | false | Excluded from this activation |
 | GOOGLE_AVAILABILITY_ENABLED | false | Excluded from this activation |
 
+Current consumers of `ICLOUD_PERSONAL_CONTENT_WRITES_ENABLED` (2026-11-07). The
+selection above is historical and unchanged. The default is still false.
+
+- The series master-content path, which still requires `EVENT_TIME_EDITS_ENABLED`.
+- The [legacy one-off content path](../sync/caldav-series-writes.md#icloud-legacy-one-off-content-updates-2026-11-07),
+  which does not require it. Turning on `ICLOUD_PERSONAL_CONTENT_WRITES_ENABLED`
+  alone, with time edits off, enables only this legacy branch.
+- Alarm reads and writes pass no content operation and are never eligible.
+
+Activation is a separate verified operational step.
+
 A true flag permits capability evaluation, not every operation on every account.
 Missing native identity/permission proof and unsupported recurrence, organizer
 or attendee forms still refuse before a write. In particular, the iCloud

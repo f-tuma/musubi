@@ -124,6 +124,18 @@ uklizené. Ostatní operace zachovávají původní permission kontrakt; sdílen
 kalendáře a produkční aktivace nejsou touto evidencí přijaté.
 [Živá evidence](calendar-icloud-series-live-acceptance.md#accepted-authenticated-personal-master-content-path-2026-09-10).
 
+Od 2026-11-07 (oprava incidentu) stejný příznak zpřístupní také úzkou
+legacy cestu `PATCH /api/v1/events`. Týká se jen názvu, popisu a místa u
+jednorázových událostí s časem bez explicitního časového modelu na ověřeném
+iCloudu. Na `EVENT_TIME_EDITS_ENABLED` nezávisí.
+
+- Výchozí hodnota zůstává vypnutá. Aktivace je samostatný ověřený provozní
+  krok.
+- Celodenní legacy události zůstávají mimo rozsah.
+- Rozhodující autoritou je podmíněný PUT s úplným readbackem. Nepotvrzený
+  zápis se dořeší čtením a ETag bez silné formy se nikdy nepotvrdí.
+- [Kontrakt a limity](../sync/caldav-series-writes.md#icloud-legacy-one-off-content-updates-2026-11-07).
+
 ## Navazující iCloud scheduling — 2026-09-10
 
 Vlastník chce další iCloud etapu prozkoumat a implementovat rovnou. Současný
