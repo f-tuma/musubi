@@ -2,6 +2,21 @@
   "schemaVersion": 1,
   "items": [
     {
+      "id": "2026-11-07",
+      "title": "Musubi 0.2.19: Edit iCloud event details",
+      "body": "Musubi can now save a new title, description or location for some of your own timed, non-recurring iCloud events, once the server operator turns this on. It is off by default. All-day and recurring events, events with guests, and changes to time or calendar are among the cases not covered.\n\nThis server and web update works with existing mobile apps. See the release notes for the exact scope.\n\nhttps://github.com/f-tuma/musubi/releases/tag/v0.2.19"
+    },
+    {
+      "id": "2026-11-06-2",
+      "title": "Musubi 0.2.18: Fewer blocked event edits",
+      "body": "Improved recovery when editing or deleting your own event conflicts only because Outlook, iCloud or Google updated its own details on the synced copy. The first attempt may still report a conflict and save nothing; a later attempt can then succeed. Some events, copies and server setups are not covered; see the release notes for the limits.\n\nThis server and web update works with existing mobile apps.\n\nhttps://github.com/f-tuma/musubi/releases/tag/v0.2.18"
+    },
+    {
+      "id": "2026-11-06",
+      "title": "Musubi 0.2.17: Multi-day events and busy sync",
+      "body": "Timed events that span several days now appear on every day in Month view, and their details show the real end date. Background sync of other connected accounts now leaves room for your event changes, and a write that cannot start in time says that nothing was saved. This is not a complete fix for slow sync.\n\nThis server and web update works with existing mobile apps.\n\nhttps://github.com/f-tuma/musubi/releases/tag/v0.2.17"
+    },
+    {
       "id": "2026-11-05-2",
       "title": "Musubi 0.2.16: Event creation during sync",
       "body": "Improved event creation while connected calendars are syncing in the background.\n\nThis server and web update works with existing mobile apps.\n\nhttps://github.com/f-tuma/musubi/releases/tag/v0.2.16"
