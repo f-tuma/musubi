@@ -4,12 +4,12 @@
     {
       "id": "2026-11-07",
       "title": "Musubi 0.2.19: Edit iCloud event details",
-      "body": "Musubi can now save a new title, description or location for your own timed, non-recurring iCloud events, once the server operator turns this on. It is off by default. All-day and recurring events, events with guests, and changes to time or calendar are not covered.\n\nThis server and web update works with existing mobile apps. See the release notes for the exact scope.\n\nhttps://github.com/f-tuma/musubi/releases/tag/v0.2.19"
+      "body": "Musubi can now save a new title, description or location for some of your own timed, non-recurring iCloud events, once the server operator turns this on. It is off by default. All-day and recurring events, events with guests, and changes to time or calendar are among the cases not covered.\n\nThis server and web update works with existing mobile apps. See the release notes for the exact scope.\n\nhttps://github.com/f-tuma/musubi/releases/tag/v0.2.19"
     },
     {
       "id": "2026-11-06-2",
       "title": "Musubi 0.2.18: Fewer blocked event edits",
-      "body": "Editing or deleting your own event no longer stays blocked when Outlook, iCloud or Google has only updated its own details on the synced copy. The first attempt may still report a conflict and save nothing; trying again completes the change. Recurring events, events with guests and events created by other members are not covered yet.\n\nThis server and web update works with existing mobile apps.\n\nhttps://github.com/f-tuma/musubi/releases/tag/v0.2.18"
+      "body": "Improved recovery when editing or deleting your own event conflicts only because Outlook, iCloud or Google updated its own details on the synced copy. The first attempt may still report a conflict and save nothing; a later attempt can then succeed. Some events, copies and server setups are not covered; see the release notes for the limits.\n\nThis server and web update works with existing mobile apps.\n\nhttps://github.com/f-tuma/musubi/releases/tag/v0.2.18"
     },
     {
       "id": "2026-11-06",
