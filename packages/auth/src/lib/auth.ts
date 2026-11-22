@@ -1,4 +1,5 @@
 import { betterAuth } from "better-auth";
+import { APIError } from "better-auth/api";
 import { refreshAccessToken } from "better-auth/oauth2";
 import { bearer, emailOTP } from "better-auth/plugins";
 import { expo } from "@better-auth/expo";
@@ -10,7 +11,7 @@ import {
   hasProviderSyncScopes,
   markOAuthAccountActive,
 } from "@musubi/db";
-import { config, logger } from "@musubi/config";
+import { config, isSignUpAllowed, logger } from "@musubi/config";
 import { defaultPageConfig } from "@musubi/types";
 import {
   sendEmail,
@@ -247,6 +248,17 @@ export const auth = betterAuth({
     },
     user: {
       create: {
+        // The one door every new account passes: password sign-up, email code
+        // and social sign-in all create the user here. Federated shadow users
+        // are made outside Better Auth and stay gated by their calendar invite.
+        before: async (user) => {
+          if (!isSignUpAllowed(config.security.signUpAllowlist, user.email)) {
+            throw new APIError("FORBIDDEN", {
+              code: "SIGN_UP_DISABLED",
+              message: "This server does not accept new accounts.",
+            });
+          }
+        },
         // Every new user (email OR social sign-in) gets a personal calendar —
         // undeletable, non-transferable, the default home for future features.
         after: async (user) => {

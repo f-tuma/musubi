@@ -299,12 +299,16 @@ function LoginRoute() {
         ) : undefined
       }
       footer={
-        <AuthSwitch
-          action={signingUp ? "Sign in" : "Create one"}
-          onAction={switchMode}
-        >
-          {signingUp ? "Already have an account?" : "New to this server?"}
-        </AuthSwitch>
+        // A closed server has no account to create; offering the form would
+        // only end in a refusal.
+        capabilities.data?.signUp === false ? undefined : (
+          <AuthSwitch
+            action={signingUp ? "Sign in" : "Create one"}
+            onAction={switchMode}
+          >
+            {signingUp ? "Already have an account?" : "New to this server?"}
+          </AuthSwitch>
+        )
       }
       title={signingUp ? "Create your account" : "Sign in"}
       utility={<ThemeToggle />}

@@ -100,6 +100,8 @@ directly:
 | `APPLE_KEY_ID` | No | Key ID of the "Sign in with Apple" `.p8` key |
 | `APPLE_PRIVATE_KEY` | No | Contents of that `.p8`. Escaped newlines (`\n`) are accepted so it fits one env line. The server signs Apple's short-lived client secret from it per exchange — there is no six-month token to rotate |
 | `REQUIRE_EMAIL_VERIFICATION` | No | `false`. `true` refuses sign-in until the address is confirmed, and sends the confirmation on sign-up and on every refused sign-in. Requires `SMTP_HOST` — the API refuses to boot otherwise. Applies to accounts that already exist, whose next sign-in is refused and mails them a link |
+| `DISABLE_SIGNUPS` | No | `false`. `true` refuses every new account — passphrase, emailed code and social sign-in — unless its address is in `SIGNUP_ALLOWED_EMAILS`. Existing accounts are unaffected. Any other non-empty value stops boot |
+| `SIGNUP_ALLOWED_EMAILS` | No | Comma-separated addresses (`ana@example.com`) or domains (`@example.com`) that may still register while `DISABLE_SIGNUPS=true`. Case-insensitive. Setting it without `DISABLE_SIGNUPS=true`, or an entry without `@`, stops boot |
 | `PUBLIC_HTTP_PORT`, `PUBLIC_HTTPS_PORT` | No | Host ports the gateway publishes; default `80` and `443` |
 
 The default full stack (`docker-compose.yml`) publishes only the gateway: the web

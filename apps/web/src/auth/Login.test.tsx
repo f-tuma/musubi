@@ -4,12 +4,16 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { Route } from "~/routes/login";
 
-const mocks = vi.hoisted(() => ({ social: vi.fn(), search: {} as { redirect?: string } }));
+const mocks = vi.hoisted(() => ({
+  social: vi.fn(),
+  search: {} as { redirect?: string },
+  capabilities: {} as { signUp?: boolean },
+}));
 vi.mock("~/auth/auth-client", () => ({
   authClient: { useSession: () => ({ data: null, isPending: false }), signIn: { social: mocks.social } },
 }));
 vi.mock("~/api/resources", () => ({
-  getServerCapabilities: async () => ({ socialsWeb: ["google"] }),
+  getServerCapabilities: async () => ({ socialsWeb: ["google"], ...mocks.capabilities }),
 }));
 vi.mock("@tanstack/react-router", async original => ({
   ...await original<object>(),
@@ -20,6 +24,7 @@ const LoginRoute = Route.options.component!;
 let client: QueryClient;
 beforeEach(() => {
   mocks.social.mockReset().mockResolvedValue({});
+  mocks.capabilities = {};
   client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 });
 afterEach(() => { cleanup(); client.clear(); });
@@ -40,4 +45,11 @@ it.each([
     callbackURL: `${window.location.origin}${destination}`,
     errorCallbackURL: `${window.location.origin}/login?error=oauth`,
   });
+});
+
+it("offers no account creation when the server is closed", async () => {
+  mocks.capabilities = { signUp: false };
+  render(<QueryClientProvider client={client}><LoginRoute /></QueryClientProvider>);
+  await screen.findByRole("button", { name: "Continue with Google" });
+  expect(screen.queryByRole("button", { name: "Create one" })).toBeNull();
 });
