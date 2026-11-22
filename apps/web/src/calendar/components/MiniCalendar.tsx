@@ -278,12 +278,16 @@ export function MiniCalendar({
                   aria-current={dateKey === todayKey ? "date" : undefined}
                   aria-label={getLongDateLabel(day)}
                   aria-selected={dateKey === anchorKey}
-                  className="grid aspect-square cursor-pointer place-items-center rounded-full text-11 text-foreground transition-colors duration-fast hover:enabled:bg-raised disabled:cursor-not-allowed disabled:opacity-40 data-[outside]:text-muted-foreground data-[today]:font-medium data-[today]:text-shu data-[selected]:bg-primary data-[selected]:font-medium data-[selected]:text-primary-foreground data-[selected]:hover:enabled:bg-primary/90"
+                  className="grid aspect-square cursor-pointer place-items-center rounded-full text-11 text-foreground transition-colors duration-fast hover:enabled:bg-raised disabled:cursor-not-allowed disabled:opacity-40 data-[outside]:text-muted-foreground data-[today]:bg-shu data-[today]:font-medium data-[today]:text-shu-foreground data-[selected]:bg-primary data-[selected]:font-medium data-[selected]:text-primary-foreground data-[selected]:hover:enabled:bg-primary/90"
                   data-outside={
                     day.getMonth() === month.getMonth() ? undefined : ""
                   }
                   data-selected={dateKey === anchorKey ? "" : undefined}
-                  data-today={dateKey === todayKey ? "" : undefined}
+                  // Filled like Month's today: shu text misses 4.5:1 on dark surfaces.
+                  // Off when selected, since `data-[today]` utilities sort after `data-[selected]`.
+                  data-today={
+                    dateKey === todayKey && dateKey !== anchorKey ? "" : undefined
+                  }
                   disabled={disabled}
                   key={dateKey}
                   ref={(node) => {
