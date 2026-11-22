@@ -15,7 +15,7 @@
 //   The stream split. Warnings and errors go to stderr so a container runtime
 //   can separate them; put them on stdout and the distinction is gone.
 import assert from "node:assert/strict";
-import { StructuredLogger, parseLogLevel } from "./logger";
+import { StructuredLogger, parseLogLevel, redactLogFields } from "./logger";
 
 /** Everything written to each stream while `run` executes. */
 function captured(run: () => void) {
@@ -205,5 +205,27 @@ const outside = logged((logger) => {
   logger.info("later");
 });
 assert.equal(outside.requestId, undefined);
+
+// --- Sink -------------------------------------------------------------------
+//
+// Error tracking reads records through the sink. It gets the original Error
+// (for a real stack trace) and must redact through the same rules as stdout.
+
+const sunk: unknown[][] = [];
+const sinkLogger = new StructuredLogger("info");
+sinkLogger.sink = (...record) => sunk.push(record);
+const sinkError = new Error("boom");
+captured(() => {
+  sinkLogger.debug("below level");
+  sinkLogger.runWithContext({ requestId: "req-2" }, () => {
+    sinkLogger.error("job.failed", { error: sinkError, sessionToken: "secret-value" });
+  });
+});
+assert.equal(sunk.length, 1, "the sink honours the log level");
+const [level, message, fields] = sunk[0] as [string, string, Record<string, unknown>];
+assert.deepEqual([level, message, fields.requestId, fields.error], ["error", "job.failed", "req-2", sinkError]);
+const redacted = redactLogFields(fields);
+assert.equal(redacted.sessionToken, "[REDACTED]");
+assert.deepEqual(Object.keys(redacted.error as object), ["name", "message", "stack"]);
 
 console.log("logger self-check: OK");

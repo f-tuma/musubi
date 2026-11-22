@@ -19,7 +19,13 @@
     "@musubi/config": "workspace:*",
     "@musubi/db": "workspace:*",
     "@musubi/emails": "workspace:*",
+    "@musubi/provider-caldav": "workspace:*",
+    "@musubi/provider-google": "workspace:*",
+    "@musubi/provider-microsoft": "workspace:*",
+    "@musubi/sync-codec": "workspace:*",
+    "@musubi/sync-runtime": "workspace:*",
     "@musubi/types": "workspace:*",
+    "@sentry/node": "11.16.0",
     "@types/cors": "^2.8.19",
     "better-auth": "1.6.23",
     "cors": "^2.8.6",
@@ -33,13 +39,8 @@
     "tsx": "^4.23.12",
     "undici": "^7.30.1",
     "web-push": "^3.6.7",
-    "zod": "^4.6.6",
     "xml-js": "1.6.11",
-    "@musubi/sync-codec": "workspace:*",
-    "@musubi/provider-google": "workspace:*",
-    "@musubi/provider-caldav": "workspace:*",
-    "@musubi/provider-microsoft": "workspace:*",
-    "@musubi/sync-runtime": "workspace:*"
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",

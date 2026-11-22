@@ -1,11 +1,12 @@
-const { getDefaultConfig } = require('expo/metro-config');
+// Expo's default config plus debug IDs, which tie each bundle to its source map.
+const { getSentryExpoConfig } = require('@sentry/react-native/metro');
 const path = require('path');
 
 const projectRoot = __dirname;
 const monorepoRoot = path.resolve(projectRoot, '../..');
 
 /** @type {import('expo/metro-config').MetroConfig} */
-const config = getDefaultConfig(projectRoot);
+const config = getSentryExpoConfig(projectRoot);
 
 // Allow Metro to watch and serve files from the entire monorepo root.
 // Without this, asset paths that traverse into the pnpm virtual store

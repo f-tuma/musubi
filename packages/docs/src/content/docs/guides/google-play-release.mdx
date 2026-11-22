@@ -63,13 +63,16 @@ Declare the following collection. Nothing is sold or used for advertising.
 | App activity → Other user-generated content | Optional | App functionality | User-created calendar names, task titles, notes and shared task content |
 | App activity → Other actions | Optional | App functionality | Attendance choices, invites, roles, and synced settings |
 | App info and performance → Diagnostics | Optional | App functionality | User-controlled problem-report email with app/build, platform/OS, and selected server |
+| App info and performance → Crash logs | Required | Analytics | Automatic crash and error reports, only in builds with `EXPO_PUBLIC_SENTRY_DSN`, sent to the publisher's Rustrak/Sentry |
+| App info and performance → Other app performance data | Required | Analytics | Screen-load and navigation timings, same builds and destination |
 | Device or other IDs → Device or other IDs | Required | Fraud prevention, security and compliance; Account management | Session IP address and user agent |
 
 Do **not** declare precise/approximate location, contacts, microphone, camera,
-advertising identifiers, payment information, app analytics, or automatic crash
-logs for the current build. Event locations are free-form calendar content, not
-the device's physical location. Reminder scheduling and widget snapshots stay
-on the device, so no push token or widget data is collected.
+advertising identifiers, payment information or app analytics. Crash logs and
+performance data apply only to builds made with `EXPO_PUBLIC_SENTRY_DSN`; drop
+both rows for a build without it. Event locations are free-form calendar
+content, not the device's physical location. Reminder scheduling and widget
+snapshots stay on the device, so no push token or widget data is collected.
 
 ### Changes from the public declaration audited on 18 July 2026
 
@@ -79,6 +82,8 @@ Before the next release, update the existing Play Console form as follows:
 - add **Photos** as optional profile data;
 - add **Diagnostics** as optional, user-initiated problem-report data;
 - add **Device or other IDs** for the session IP/user-agent security record;
+- add **Crash logs** and **Other app performance data** (Analytics, required)
+  for a build made with `EXPO_PUBLIC_SENTRY_DSN`;
 - mark **Other user-generated content** and **Other actions** optional;
 - remove **Developer communications** from Name and Email unless Musubi starts
   using account addresses for product announcements (it does not today);

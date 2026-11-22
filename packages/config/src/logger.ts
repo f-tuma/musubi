@@ -39,8 +39,18 @@ function jsonReplacer(key: string, value: unknown) {
   return value;
 }
 
+/** The same credential redaction and Error flattening as a log line, as plain JSON data. */
+export function redactLogFields(fields: LogFields): LogFields {
+  return JSON.parse(JSON.stringify(fields, jsonReplacer)) as LogFields;
+}
+
+export type LogSink = (level: Exclude<LogLevel, "silent">, message: string, fields: LogFields) => void;
+
 export class StructuredLogger {
   private readonly contexts = new AsyncLocalStorage<LogFields>();
+
+  /** Receives every enabled record with its unredacted context and fields. */
+  sink: LogSink | undefined;
 
   constructor(readonly level: LogLevel) {}
 
@@ -75,5 +85,6 @@ export class StructuredLogger {
     const line = JSON.stringify(payload, jsonReplacer);
     const stream = level === "warn" || level === "error" ? process.stderr : process.stdout;
     stream.write(`${line}\n`);
+    this.sink?.(level, message, { ...this.contexts.getStore(), ...fields });
   }
 }

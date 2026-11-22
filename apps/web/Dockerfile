@@ -14,6 +14,8 @@ COPY packages/design-system packages/design-system
 COPY packages/types packages/types
 RUN pnpm --filter @musubi/web... install --frozen-lockfile
 RUN pnpm --filter @musubi/web build
+# The static sentry-cli for this platform, used at runtime to upload source maps.
+RUN cp node_modules/@sentry/cli-linux-*/bin/sentry-cli /repo/sentry-cli
 
 # Nitro emits a self-contained bundle: .output/server carries its own
 # node_modules, so the runtime needs neither pnpm nor the monorepo source.
@@ -23,7 +25,10 @@ RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack 
     /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack /usr/local/bin/pnpm /usr/local/bin/pnpx
 WORKDIR /app
 COPY --from=build /repo/apps/web/.output /app/.output
+COPY --from=build /repo/sentry-cli /usr/local/bin/sentry-cli
 ENV NODE_ENV=production
+# Rustrak ignores the organization; sentry-cli only insists that one is set.
+ENV SENTRY_ORG=musubi
 
 # The server reads PORT and binds all interfaces.
 ARG PORT=3000
@@ -35,4 +40,7 @@ USER node
 
 # No API_URL: the browser calls /api/* on the same public origin, which the
 # reverse proxy routes to the API. This container never talks to the API itself.
-CMD ["node", ".output/server/index.mjs"]
+# With SENTRY_URL, SENTRY_AUTH_TOKEN and SENTRY_PROJECT set it uploads this
+# build's source maps (debug IDs come from the Vite build) on start, in the
+# background; re-uploading the same build is idempotent.
+CMD ["sh", "-c", "[ -z \"$SENTRY_AUTH_TOKEN\" ] || sentry-cli sourcemaps upload .output/public & exec node .output/server/index.mjs"]

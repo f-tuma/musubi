@@ -1,3 +1,6 @@
+// Must stay the first import: see instrument.ts.
+import "./instrument";
+import { flush as flushTelemetry } from "@sentry/node";
 import { drainOutlookMoves } from "./sync/outlook_moves";
 import { handlerOutlookMoveOptions, handlerLatestOutlookMove, handlerPreviewOutlookMove, handlerReadOutlookMove, handlerStartOutlookMove } from "./handlers/outlook_moves";
 import { handlerAvailabilitySources, handlerAvailabilitySelection, handlerAvailability } from "./handlers/availability";
@@ -146,7 +149,7 @@ import {
 } from "./metrics";
 import { dispatchDueReminders, pushEnabled } from "./reminder_dispatch";
 import { drainPendingNotifications } from "./notification_dispatch";
-import { nonOverlapping } from "./scheduling";
+import { monitored, nonOverlapping } from "./scheduling";
 import { externalBackgroundPolicy, runDeliveryRecovery, startExternalBackground } from "./sync/background";
 import { acquireApiSingletonLock } from "./singleton";
 import { trustPrivateProxies } from "./middleware/proxy";
@@ -584,6 +587,7 @@ async function cleanupExpired() {
     });
   } catch (e) {
     logger.error("cleanup.failed", { error: e });
+    throw e;
   }
 }
 
@@ -614,6 +618,7 @@ async function syncExternalAccounts() {
       durationMs: Math.round((performance.now() - startedAt) * 10) / 10,
       error: e,
     });
+    throw e;
   }
 }
 
@@ -634,15 +639,16 @@ async function dispatchReminders() {
     else logger.debug("reminders.dispatch.completed", fields);
   } catch (e) {
     logger.error("reminders.dispatch.failed", { error: e });
+    throw e;
   }
 }
 
-const runCleanup = nonOverlapping(cleanupExpired, () => {
+const runCleanup = nonOverlapping(monitored("musubi-cleanup", 60, cleanupExpired), () => {
   recordScheduledTaskSkip("cleanup");
   logger.warn("cleanup.skipped", { reason: "previous_run_active" });
 });
 
-const runExternalSync = nonOverlapping(syncExternalAccounts, () => {
+const runExternalSync = nonOverlapping(monitored("musubi-external-sync", config.api.externalSyncIntervalMin, syncExternalAccounts), () => {
   recordScheduledTaskSkip("external_sync");
   logger.warn("sync.scheduler.skipped", { reason: "previous_run_active" });
 });
@@ -660,7 +666,7 @@ const runEventOutbox = nonOverlapping(async () => {
   });
 }, () => { recordScheduledTaskSkip("event_outbox"); });
 
-const runReminders = nonOverlapping(dispatchReminders, () => {
+const runReminders = nonOverlapping(monitored("musubi-reminders", 1, dispatchReminders), () => {
   recordScheduledTaskSkip("reminders");
   logger.warn("reminders.dispatch.skipped", { reason: "previous_run_active" });
 });
@@ -674,10 +680,11 @@ async function sendPendingNotifications() {
     if (sent > 0) logger.info("notifications.sent", { emails: sent });
   } catch (e) {
     logger.error("notifications.drain_failed", { error: e });
+    throw e;
   }
 }
 
-const runNotifications = nonOverlapping(sendPendingNotifications, () => {
+const runNotifications = nonOverlapping(monitored("musubi-notifications", 1, sendPendingNotifications), () => {
   recordScheduledTaskSkip("notifications");
   logger.warn("notifications.skipped", { reason: "previous_run_active" });
 });
@@ -761,7 +768,8 @@ async function start() {
   }
 }
 
-void start().catch((error) => {
+void start().catch(async (error) => {
   logger.error("server.start_failed", { error });
+  await flushTelemetry(2000);
   process.exit(1);
 });

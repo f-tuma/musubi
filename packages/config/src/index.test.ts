@@ -15,6 +15,7 @@ async function main() {
     parseEnvironment,
     parseExternalDeliveryRecoveryMode,
     parseMediaConfig,
+    parseSentryConfig,
     parseSignUpAllowlist,
     parseSyncOperationV1EncoderEnabled,
     validateAuthSecret,
@@ -150,6 +151,27 @@ async function main() {
     }).s3?.bucket,
     "media",
   );
+
+  // A bad DSN fails boot instead of silently reporting nowhere.
+  const sentry = (env: Record<string, string>) => parseSentryConfig(env, "prod");
+  assert.deepEqual(sentry({}), { dsn: "", webDsn: "", environment: "prod", tracesSampleRate: 0.2 });
+  assert.deepEqual(sentry({
+    SENTRY_DSN: " https://key@errors.example.com/1 ",
+    SENTRY_WEB_DSN: "http://key@10.0.0.2:8080/sub/2",
+    SENTRY_ENVIRONMENT: "staging",
+    SENTRY_TRACES_SAMPLE_RATE: "0",
+  }), {
+    dsn: "https://key@errors.example.com/1",
+    webDsn: "http://key@10.0.0.2:8080/sub/2",
+    environment: "staging",
+    tracesSampleRate: 0,
+  });
+  for (const dsn of ["errors.example.com/1", "https://errors.example.com/1", "https://key@errors.example.com/", "ftp://key@host/1"]) {
+    assert.throws(() => sentry({ SENTRY_DSN: dsn }), /Invalid SENTRY_DSN/);
+  }
+  for (const rate of ["-0.1", "1.5", "all"]) {
+    assert.throws(() => sentry({ SENTRY_TRACES_SAMPLE_RATE: rate }), /Invalid SENTRY_TRACES_SAMPLE_RATE/);
+  }
 
   console.log("config security self-check: OK");
 }

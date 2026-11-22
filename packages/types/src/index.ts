@@ -34,3 +34,4 @@ export * from "./availability";
 
 export * from "./provider-organizer";
 export * from "./outlook-move";
+export { scrubBreadcrumb, scrubTelemetry, scrubTelemetryString, TELEMETRY_DATA_COLLECTION } from "./telemetry";

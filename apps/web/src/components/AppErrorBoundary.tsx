@@ -2,9 +2,12 @@ import type { ErrorComponentProps } from "@tanstack/react-router";
 import { Link, useRouter } from "@tanstack/react-router";
 import { RouteState } from "~/components/route-state";
 import { Button } from "~/components/ui/button";
+import { useEffect } from "react";
+import { reportError } from "~/telemetry";
 
 export function AppErrorBoundary({ error }: ErrorComponentProps) {
   const router = useRouter();
+  useEffect(() => reportError(error), [error]);
 
   return (
     <RouteState

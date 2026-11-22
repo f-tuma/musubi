@@ -140,6 +140,15 @@ export const ServerCapabilitiesSchema = z
     // False when the operator closed registration to everyone. Absent on an
     // older API, which always accepted new accounts.
     signUp: z.boolean().default(true),
+    // Error and performance reporting for this install's browsers, or null.
+    // Absent on an API older than this field, which means the same thing.
+    sentry: z
+      .object({
+        dsn: z.string(),
+        environment: z.string(),
+        tracesSampleRate: z.number(),
+      })
+      .nullish(),
   })
   .loose();
 
