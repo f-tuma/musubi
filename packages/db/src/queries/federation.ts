@@ -88,6 +88,11 @@ export async function getUserByTokenHash(tokenHash: string, now = new Date()) {
   return row?.user ?? null;
 }
 
+export async function isExternalUser(userID: string) {
+  const [row] = await db.select({ isExternal: user.isExternal }).from(user).where(eq(user.id, userID));
+  return row?.isExternal === true;
+}
+
 export async function deleteExpiredMemberTokens(now = new Date()) {
   const cutoff = new Date(now.getTime() - MEMBER_TOKEN_TTL_MS);
   await db.delete(memberTokens).where(lte(memberTokens.createdAt, cutoff));

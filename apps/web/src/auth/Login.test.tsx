@@ -6,7 +6,7 @@ import { Route } from "~/routes/login";
 
 const mocks = vi.hoisted(() => ({
   social: vi.fn(),
-  search: {} as { redirect?: string },
+  search: {} as { redirect?: string; error?: string | string[] },
   capabilities: {} as { signUp?: boolean },
 }));
 vi.mock("~/auth/auth-client", () => ({
@@ -25,6 +25,7 @@ let client: QueryClient;
 beforeEach(() => {
   mocks.social.mockReset().mockResolvedValue({});
   mocks.capabilities = {};
+  mocks.search = {};
   client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 });
 afterEach(() => { cleanup(); client.clear(); });
@@ -52,4 +53,10 @@ it("offers no account creation when the server is closed", async () => {
   render(<QueryClientProvider client={client}><LoginRoute /></QueryClientProvider>);
   await screen.findByRole("button", { name: "Continue with Google" });
   expect(screen.queryByRole("button", { name: "Create one" })).toBeNull();
+});
+
+it("says why a provider sign-up was refused", async () => {
+  mocks.search = { error: ["oauth", "This_server_does_not_accept_new_accounts."] };
+  render(<QueryClientProvider client={client}><LoginRoute /></QueryClientProvider>);
+  expect(await screen.findByText("This server does not accept new accounts.")).toBeTruthy();
 });

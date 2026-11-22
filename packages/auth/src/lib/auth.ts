@@ -9,6 +9,7 @@ import {
   ensureDefaultPage,
   getUserSettings,
   hasProviderSyncScopes,
+  isExternalUser,
   markOAuthAccountActive,
 } from "@musubi/db";
 import { config, isSignUpAllowed, logger } from "@musubi/config";
@@ -250,7 +251,7 @@ export const auth = betterAuth({
       create: {
         // The one door every new account passes: password sign-up, email code
         // and social sign-in all create the user here. Federated shadow users
-        // are made outside Better Auth and stay gated by their calendar invite.
+        // are made outside Better Auth; the session hook keeps them out.
         before: async (user) => {
           if (!isSignUpAllowed(config.security.signUpAllowlist, user.email)) {
             throw new APIError("FORBIDDEN", {
@@ -303,6 +304,22 @@ export const auth = betterAuth({
         },
       },
     },
+    session: {
+      create: {
+        // Shadow users stand in for accounts on another server and authenticate
+        // with member tokens only. The federation accept endpoint creates them
+        // with a caller-chosen email, so an emailed code or password reset to
+        // that address must not turn one into a local login.
+        before: async (session) => {
+          if (await isExternalUser(session.userId)) {
+            throw new APIError("FORBIDDEN", {
+              code: "EXTERNAL_USER",
+              message: "This account belongs to another Musubi server.",
+            });
+          }
+        },
+      },
+    },
   },
   plugins: [
     bearer(),
@@ -313,6 +330,8 @@ export const auth = betterAuth({
       // Ten minutes: long enough to switch to a phone and read the mail, short
       // enough that a code left in an inbox is not a standing key.
       expiresIn: 10 * 60,
+      // A fully closed server has nobody new to mail a code to.
+      disableSignUp: config.security.signUpAllowlist?.length === 0,
       sendVerificationOTP: async ({ email, otp }) => {
         await sendEmail(
           email,

@@ -261,6 +261,9 @@ through their invite link, because they keep their account at home.
 Without `REQUIRE_EMAIL_VERIFICATION=true`, whoever types a listed address first
 gets the account. Turn verification on, or list exact addresses and have the
 person sign up promptly. A whole domain is only as safe as verification makes it.
+Social sign-in trusts the address the provider reports: with Microsoft sign-in on
+the default `common` tenant, make sure your Entra app rejects unverified email
+claims, or leave Microsoft unconfigured on a closed server.
 </Aside>
 
 A typo in either variable stops the API at boot, and so does a list without
