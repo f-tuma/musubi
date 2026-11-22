@@ -40,6 +40,10 @@ services:
     image: frgtndev/musubi-web:${MUSUBI_TAG:-latest}
     environment:
       PORT: 3000
+      # Optional: upload this build's source maps to Rustrak/Sentry on start.
+      SENTRY_URL: ${SENTRY_URL:-}
+      SENTRY_AUTH_TOKEN: ${SENTRY_AUTH_TOKEN:-}
+      SENTRY_PROJECT: ${SENTRY_WEB_PROJECT:-}
     expose:
       - "3000"
     networks:

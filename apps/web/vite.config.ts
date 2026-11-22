@@ -1,4 +1,5 @@
 import tailwindcss from "@tailwindcss/vite";
+import { sentryVitePlugin } from "@sentry/vite-plugin";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
 import { nitro } from "nitro/vite";
@@ -7,6 +8,9 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
 	build: {
+		// Maps without a sourceMappingURL comment, which the web image uploads
+		// to Rustrak/Sentry on start (see Dockerfile).
+		sourcemap: "hidden",
 		rolldownOptions: {
 			output: {
 				// Shared schema and route chunks form cycles. Initialize their source
@@ -45,6 +49,14 @@ export default defineConfig({
 					target: "http://127.0.0.1:7531",
 				},
 			},
+		}),
+		// Stamps each chunk and its map with a debug ID during the build, before
+		// Nitro records asset sizes. No upload here: the image does it at runtime
+		// with the operator's credentials, so one public build serves every install.
+		sentryVitePlugin({
+			release: { create: false, inject: false, name: "" },
+			sourcemaps: { disable: "disable-upload" },
+			telemetry: false,
 		}),
 	],
 	resolve: {

@@ -1,6 +1,6 @@
 ---
 title: Observability runbook
-description: Scrape Musubi metrics, query structured logs, import dashboards, and triage production failures.
+description: Scrape Musubi metrics, query structured logs, track errors in Rustrak or Sentry, import dashboards, and triage production failures.
 ---
 
 import { Aside, Steps } from '@astrojs/starlight/components';
@@ -152,6 +152,40 @@ Do not add request bodies, passwords, OAuth codes, refresh tokens, CalDAV
 credentials, invite tokens, or member tokens to logs. A request ID is the safe
 join key between client reports and server activity.
 </Aside>
+
+## Error tracking (Rustrak / Sentry)
+
+Prometheus and Loki answer "how much" and "how often". Error tracking answers
+"which line, for whom, since which release". Musubi ships the official Sentry
+SDKs and works with [Rustrak](https://github.com/rustrak/rustrak), a small
+self-hosted server for the same protocol, or with Sentry itself. Both stacks can
+run side by side; neither depends on the other.
+
+Create one project per surface (for example `musubi-api`, `musubi-web` and
+`musubi-mobile`) and set the variables from the
+[environment reference](/docs/reference/environment/#error-tracking-rustrak--sentry).
+Rustrak needs `PUBLIC_URL` so its DSNs carry a reachable address.
+
+| Surface | Configured by | Reports |
+|---|---|---|
+| API | `SENTRY_DSN` | Every `error` log record as an issue (5xx, scheduler, sync, notification and boot failures) with `request_id`, user id and redacted log fields; uncaught exceptions; Express, HTTP and PostgreSQL traces; all structured logs as Sentry logs; cron check-ins |
+| Web | `SENTRY_WEB_DSN` on the API | Uncaught errors and route error boundaries, page-load and navigation traces linked to the API traces they cause, release health. Source maps with the web container's `SENTRY_URL`/`SENTRY_AUTH_TOKEN`/`SENTRY_WEB_PROJECT` |
+| Phone app | `EXPO_PUBLIC_SENTRY_DSN` at build time | Native and JS crashes, errors, screen-navigation traces, release health. Reports to the app publisher, whichever server the user connects to |
+
+Cron monitors are created on the first run: `musubi-cleanup` (hourly),
+`musubi-external-sync` (every `EXTERNAL_SYNC_INTERVAL_MIN`),
+`musubi-reminders` and `musubi-notifications` (every minute, only when push or
+SMTP is configured). A missed, hung or failed run opens a `Cron failure` issue.
+The 15-second delivery-recovery loop is not monitored; its failures are issues.
+
+What the SDKs never attach: request or response bodies, headers, cookies, IP
+addresses, stack-frame variables, SQL parameters and query strings. Invite and
+member tokens and reset links in URL paths are replaced with `[redacted]`
+(`packages/types/src/telemetry.ts`). Log fields go through the same redaction
+as stdout. 4xx responses are logged but are not issues.
+
+Rustrak's own alerts (new issue, regression, cron failure) complement the
+Prometheus alert rules below; they do not replace them.
 
 ## Shipped operations assets
 

@@ -10,9 +10,11 @@ export { parseAndroidAppLinksSha256 } from "./android-app-links";
 
 export {
   LOG_LEVELS,
+  redactLogFields,
   StructuredLogger,
   type LogFields,
   type LogLevel,
+  type LogSink,
 } from "./logger";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -121,6 +123,44 @@ export function parseSyncOperationV1EncoderEnabled(value: string | undefined): b
   if (value === undefined || value === "true") return true;
   if (value === "false") return false;
   throw new Error("Invalid SYNC_OPERATION_V1_ENCODER_ENABLED. Expected true or false.");
+}
+
+type SentryConfig = {
+  // Where the API reports. Empty keeps every Sentry SDK in this process off.
+  dsn: string;
+  // Handed to browsers by GET /api/v1/server. A DSN only authorizes sending
+  // events, so it is public by design; empty means the web app reports nothing.
+  webDsn: string;
+  environment: string;
+  tracesSampleRate: number;
+};
+
+function parseDsn(name: string, value: string | undefined) {
+  const dsn = value?.trim() ?? "";
+  if (!dsn) return "";
+  let url: URL | undefined;
+  try { url = new URL(dsn); } catch { /* reported below */ }
+  if (!url || !/^https?:$/.test(url.protocol) || !url.username || !/^\/.*\d+$/.test(url.pathname)) {
+    throw new Error(`Invalid ${name}. Expected a DSN like https://<key>@errors.example.com/<project-id>.`);
+  }
+  return dsn;
+}
+
+export function parseSentryConfig(
+  env: Record<string, string | undefined>,
+  environment: Environment,
+): SentryConfig {
+  const rate = env.SENTRY_TRACES_SAMPLE_RATE?.trim();
+  const tracesSampleRate = rate ? Number(rate) : 0.2;
+  if (!Number.isFinite(tracesSampleRate) || tracesSampleRate < 0 || tracesSampleRate > 1) {
+    throw new Error(`Invalid SENTRY_TRACES_SAMPLE_RATE "${rate}". Expected a number from 0 to 1.`);
+  }
+  return {
+    dsn: parseDsn("SENTRY_DSN", env.SENTRY_DSN),
+    webDsn: parseDsn("SENTRY_WEB_DSN", env.SENTRY_WEB_DSN),
+    environment: env.SENTRY_ENVIRONMENT?.trim() || environment,
+    tracesSampleRate,
+  };
 }
 
 type APIConfig = {
@@ -238,6 +278,7 @@ type Config = {
   db: DBConfig;
   media: MediaConfig;
   push: PushConfig;
+  sentry: SentryConfig;
   smtp: SMTPConfig;
   social: SocialConfig;
   security: SecurityConfig;
@@ -401,6 +442,7 @@ export const config: Config = {
   db: dbConfig,
   media: mediaConfig,
   push: pushConfig,
+  sentry: parseSentryConfig(process.env, environment),
   smtp: smtpConfig,
   social: socialConfig,
   security: securityConfig,

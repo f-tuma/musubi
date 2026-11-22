@@ -4,6 +4,7 @@ import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query
 import { AppErrorBoundary } from "~/components/AppErrorBoundary";
 import { CACHE_MAX_AGE_MS } from "~/offline/cache-version";
 import { NotFound } from "~/components/NotFound";
+import { startTelemetry } from "./telemetry";
 import { routeTree } from "./routeTree.gen";
 
 export function getRouter() {
@@ -39,6 +40,7 @@ export function getRouter() {
 
   setupRouterSsrQueryIntegration({ queryClient, router });
 
+  startTelemetry(router);
   return router;
 }
 

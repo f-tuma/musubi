@@ -14,6 +14,7 @@ nodeLinker: hoisted
 # unrelated optional peer edges, and makes the lockfile settings explicit.
 autoInstallPeers: false
 allowBuilds:
+  '@sentry/cli': false
   esbuild: false
   msgpackr-extract: true
   sharp: false

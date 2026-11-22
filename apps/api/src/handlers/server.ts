@@ -72,6 +72,15 @@ export function handlerServer(_: Request, res: Response) {
     // "this server never pushes" — the client then keeps its own in-tab
     // reminders instead of offering something that will not arrive.
     pushPublicKey: config.push.vapidPublicKey || null,
+    // Where this install's browsers report errors and traces, or null. Public
+    // by design: a DSN only lets a client send events.
+    sentry: config.sentry.webDsn
+      ? {
+          dsn: config.sentry.webDsn,
+          environment: config.sentry.environment,
+          tracesSampleRate: config.sentry.tracesSampleRate,
+        }
+      : null,
   });
 }
 

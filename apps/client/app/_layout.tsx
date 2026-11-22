@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { View, useColorScheme } from 'react-native';
 import { useSettingsStore } from '@/store/useSettingsStore';
 import { activeScheme, applyTheme, colors, styles } from '@/constants/theme';
-import { Stack, SplashScreen, useRouter, usePathname } from 'expo-router';
+import { Stack, SplashScreen, useRouter, usePathname, useNavigationContainerRef } from 'expo-router';
 import { useFonts } from 'expo-font';
 import { InterTight_400Regular, InterTight_500Medium } from '@expo-google-fonts/inter-tight';
 import { NotoSerif_400Regular } from '@expo-google-fonts/noto-serif';
@@ -25,12 +25,33 @@ import { parseICS } from '@/lib/ics';
 import { useImportStore } from '@/store/useImportStore';
 import { useAccountCacheReady } from '@/hooks/useAccountCacheReady';
 import { fetchWithTimeout } from '@/lib/network';
+import * as Sentry from '@sentry/react-native';
+import { scrubTelemetry } from '@musubi/types';
 
 import { useMigrations } from 'drizzle-orm/expo-sqlite/migrator';
 import { db } from '@/services/db';
 import migrations from '@/drizzle/migrations';
 
 SplashScreen.preventAutoHideAsync();
+
+// Crash, error and performance reporting for this build of the app, to the
+// publisher's Rustrak/Sentry (EXPO_PUBLIC_SENTRY_DSN at build time). Builds
+// without it report nothing. No IP, cookies or request bodies; secrets in URLs
+// (invite tokens, OAuth codes) are scrubbed.
+const navigationIntegration = Sentry.reactNavigationIntegration();
+const sentryDsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
+if (sentryDsn) {
+  Sentry.init({
+    dsn: sentryDsn,
+    environment: __DEV__ ? 'development' : 'production',
+    tracesSampleRate: 0.2,
+    sendDefaultPii: false,
+    integrations: [navigationIntegration],
+    beforeSend: scrubTelemetry,
+    beforeSendTransaction: scrubTelemetry,
+    beforeBreadcrumb: scrubTelemetry,
+  });
+}
 
 // An .ics opened via the OS ("Open in Musubi") arrives as a file/content/http
 // URL. Read it, parse the first event, and stash it for the calendar screen.
@@ -199,7 +220,13 @@ function AppLoader() {
   );
 }
 
-export default function RootLayout() {
+function RootLayout() {
+  // Screen changes become navigation transactions in performance traces.
+  const navigationRef = useNavigationContainerRef();
+  useEffect(() => {
+    navigationIntegration.registerNavigationContainer(navigationRef);
+  }, [navigationRef]);
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ServerProvider>
@@ -214,3 +241,5 @@ export default function RootLayout() {
     </GestureHandlerRootView>
   );
 }
+
+export default Sentry.wrap(RootLayout);

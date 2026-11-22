@@ -158,6 +158,28 @@ The public and private keys must be set together: the API refuses to boot with
 one of them, because advertising a key the server cannot sign with would let
 browsers subscribe to reminders that then fail silently on every send.
 
+## Error tracking (Rustrak / Sentry)
+
+Optional. Errors, performance traces, logs, release health and cron check-ins
+go to [Rustrak](https://github.com/rustrak/rustrak) or any server that speaks
+the Sentry protocol. Unset, no SDK starts and nothing leaves the server. See
+[Observability](/docs/operations/observability/#error-tracking-rustrak--sentry).
+
+| Variable | Container | Purpose |
+| --- | --- | --- |
+| `SENTRY_DSN` | API | Where the API reports. Invalid DSNs stop the boot |
+| `SENTRY_WEB_DSN` | API | Handed to browsers as `sentry` on `/api/v1/server`. Public by design: a DSN only lets a client send events. Unset, the web app reports nothing and never downloads the SDK |
+| `SENTRY_ENVIRONMENT` | API | Environment tag for API and web events; defaults to `ENVIRONMENT` |
+| `SENTRY_TRACES_SAMPLE_RATE` | API | Share of requests and page loads traced, `0`–`1`; defaults to `0.2` |
+| `SENTRY_URL` | web | Rustrak/Sentry base URL for source map upload |
+| `SENTRY_AUTH_TOKEN` | web | API token allowed to upload source maps. A secret |
+| `SENTRY_WEB_PROJECT` | web | Project slug the maps belong to; Compose passes it as `SENTRY_PROJECT` |
+
+The three upload variables go together. With them, the web container uploads
+its build's source maps once per start, so minified browser stack traces read
+as source. Rustrak must have `PUBLIC_URL` set, or its DSNs and upload endpoint
+point at `0.0.0.0`.
+
 ## Google
 
 ### Server runtime
@@ -186,6 +208,8 @@ Register this exact authorized **Web** redirect URI in Google Cloud:
 | `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` | iOS native client id and derived URL scheme |
 | `EXPO_PUBLIC_IOS_APP_STORE_URL` | Direct App Store listing for the update screen, when publicly released |
 | `EXPO_PUBLIC_IOS_TESTFLIGHT_URL` | Direct TestFlight join URL for the iOS beta update action |
+| `EXPO_PUBLIC_SENTRY_DSN` | Crash, error and performance reporting for this app build. Goes to the app publisher's Rustrak/Sentry, not to the user's server |
+| `SENTRY_AUTH_TOKEN`, `SENTRY_URL`, `SENTRY_MOBILE_PROJECT` | EAS secrets. With the token set, the native build uploads JS source maps and debug symbols; `SENTRY_ORG` defaults to `musubi`, which Rustrak ignores |
 
 `EXPO_PUBLIC_*` values are compiled into the app. Changing them requires a new
 native build; restarting the API is not enough. They are identifiers, not

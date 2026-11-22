@@ -196,7 +196,18 @@ const expoConfig: ExpoConfig = {
     "./plugins/withCalendarAppCategory",
     "./plugins/withExactAlarms",
     "./plugins/withIosWidgets",
-    "expo-sharing"
+    "expo-sharing",
+    // Uploads JS source maps and native debug files to Rustrak/Sentry during the
+    // native build. Only with SENTRY_AUTH_TOKEN (an EAS secret): without it the
+    // build's upload step would fail, while error reporting itself needs only
+    // EXPO_PUBLIC_SENTRY_DSN.
+    ...(process.env.SENTRY_AUTH_TOKEN
+      ? [["@sentry/react-native/expo", {
+        url: process.env.SENTRY_URL,
+        project: process.env.SENTRY_MOBILE_PROJECT,
+        organization: process.env.SENTRY_ORG ?? "musubi",
+      }] satisfies NonNullable<ExpoConfig["plugins"]>[number]]
+      : []),
   ],
   experiments: {
     "typedRoutes": true,

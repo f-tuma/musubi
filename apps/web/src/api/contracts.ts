@@ -137,6 +137,15 @@ export const ServerCapabilitiesSchema = z
     // VAPID public key, or null on a server with no push keys. Absent entirely
     // on an API older than this field, which means the same thing.
     pushPublicKey: z.string().nullish(),
+    // Error and performance reporting for this install's browsers, or null.
+    // Absent on an API older than this field, which means the same thing.
+    sentry: z
+      .object({
+        dsn: z.string(),
+        environment: z.string(),
+        tracesSampleRate: z.number(),
+      })
+      .nullish(),
   })
   .loose();
 

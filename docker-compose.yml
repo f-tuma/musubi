@@ -66,6 +66,11 @@ services:
     #   dockerfile: apps/web/Dockerfile
     environment:
       PORT: 3000
+      # Optional: upload this build's source maps to Rustrak/Sentry on start,
+      # for readable browser stack traces. All three or none.
+      SENTRY_URL: ${SENTRY_URL:-}
+      SENTRY_AUTH_TOKEN: ${SENTRY_AUTH_TOKEN:-}
+      SENTRY_PROJECT: ${SENTRY_WEB_PROJECT:-}
     # No published port: reachable only through the gateway. It serves the
     # client bundle and never talks to the API itself — the browser does.
     expose:
