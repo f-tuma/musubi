@@ -26,7 +26,7 @@ import { useImportStore } from '@/store/useImportStore';
 import { useAccountCacheReady } from '@/hooks/useAccountCacheReady';
 import { fetchWithTimeout } from '@/lib/network';
 import * as Sentry from '@sentry/react-native';
-import { scrubTelemetry } from '@musubi/types';
+import { scrubBreadcrumb, scrubTelemetry } from '@musubi/types';
 
 import { useMigrations } from 'drizzle-orm/expo-sqlite/migrator';
 import { db } from '@/services/db';
@@ -49,7 +49,9 @@ if (sentryDsn) {
     integrations: [navigationIntegration],
     beforeSend: scrubTelemetry,
     beforeSendTransaction: scrubTelemetry,
-    beforeBreadcrumb: scrubTelemetry,
+    beforeBreadcrumb: scrubBreadcrumb,
+    // The server is the user's choice, often not ours: no trace headers to it.
+    tracePropagationTargets: [],
   });
 }
 

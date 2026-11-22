@@ -4,7 +4,7 @@
 // check-ins. Without SENTRY_DSN nothing here runs and nothing leaves the process.
 import * as Sentry from "@sentry/node";
 import { config, logger, redactLogFields, type LogSink } from "@musubi/config";
-import { PRODUCT_VERSION, scrubTelemetry, TELEMETRY_DATA_COLLECTION } from "@musubi/types";
+import { PRODUCT_VERSION, scrubBreadcrumb, scrubTelemetry, TELEMETRY_DATA_COLLECTION } from "@musubi/types";
 
 const { dsn, environment, tracesSampleRate } = config.sentry;
 
@@ -14,7 +14,9 @@ const { dsn, environment, tracesSampleRate } = config.sentry;
 const forwardLog: LogSink = (level, message, fields) => {
   const attributes = redactLogFields(fields);
   Sentry.logger[level](message, attributes);
-  if (level !== "error") return;
+  // The access log repeats every 5xx (and deliberate 503 waits) at error level;
+  // the handler's own `http.request.failed` record is the issue.
+  if (level !== "error" || message === "http.request.completed") return;
   const context = {
     extra: attributes,
     tags: {
@@ -37,11 +39,19 @@ if (dsn) {
     // middlewareErrorHandler decides the status and logs 5xx once, which the
     // sink above reports. Express's own capture would also report 4xx
     // NotFoundError & co. as 500s, and every real 500 twice.
-    integrations: [Sentry.expressIntegration({ shouldHandleError: false })],
+    integrations: [
+      Sentry.expressIntegration({ shouldHandleError: false }),
+      // Report, then crash as Node does without the SDK; Compose restarts it.
+      Sentry.onUnhandledRejectionIntegration({ mode: "strict" }),
+    ],
+    // No trace headers on calls to Google, Microsoft, CalDAV or federated servers.
+    tracePropagationTargets: [],
+    // The container healthcheck, every 10 seconds.
+    ignoreSpans: ["GET /api/v1/server/ok"],
     beforeSend: scrubTelemetry,
     beforeSendSpan: scrubTelemetry,
     beforeSendLog: scrubTelemetry,
-    beforeBreadcrumb: scrubTelemetry,
+    beforeBreadcrumb: scrubBreadcrumb,
   });
   logger.sink = forwardLog;
 }

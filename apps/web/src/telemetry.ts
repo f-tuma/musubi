@@ -1,11 +1,11 @@
-import { scrubTelemetry, TELEMETRY_DATA_COLLECTION } from "@musubi/types";
+import { scrubBreadcrumb, scrubTelemetry, TELEMETRY_DATA_COLLECTION } from "@musubi/types";
 import type { sentry as TelemetrySdk } from "./telemetry-sdk";
 import type { AnyRouter } from "@tanstack/react-router";
 import { version } from "../../../package.json";
 import { getServerCapabilities } from "~/api/resources";
 
-let sdk: typeof TelemetrySdk | undefined;
-let started = false;
+// Settles with the SDK once it is running, or undefined when reporting is off.
+let ready: Promise<typeof TelemetrySdk | undefined> | undefined;
 
 /**
  * Starts browser error, performance and release-health reporting when this
@@ -14,11 +14,10 @@ let started = false;
  * of it to its browsers.
  */
 export function startTelemetry(router: AnyRouter) {
-  if (started || typeof window === "undefined") return;
-  started = true;
-  getServerCapabilities()
+  if (ready || typeof window === "undefined") return;
+  ready = getServerCapabilities()
     .then(async ({ sentry: options }) => {
-      if (!options) return;
+      if (!options) return undefined;
       // Lazy on purpose: a separate chunk only installs with a DSN download.
       const { sentry } = await import("./telemetry-sdk");
       sentry.init({
@@ -30,15 +29,18 @@ export function startTelemetry(router: AnyRouter) {
         dataCollection: TELEMETRY_DATA_COLLECTION,
         beforeSend: scrubTelemetry,
         beforeSendSpan: scrubTelemetry,
-        beforeBreadcrumb: scrubTelemetry,
+        beforeBreadcrumb: scrubBreadcrumb,
       });
-      sdk = sentry;
+      return sentry;
     })
     // An unreachable API leaves this tab unreported, never broken.
-    .catch(() => {});
+    .catch(() => undefined);
 }
 
-/** Route error boundaries catch render errors before the global handler can. */
+/**
+ * Route error boundaries catch render errors before the global handler can.
+ * An error on the first paint waits for the SDK instead of being lost.
+ */
 export function reportError(error: unknown) {
-  sdk?.captureException(error);
+  void ready?.then((sentry) => sentry?.captureException(error));
 }

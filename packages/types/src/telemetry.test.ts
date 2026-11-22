@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { scrubTelemetry } from "./telemetry";
+import { scrubBreadcrumb, scrubTelemetry } from "./telemetry";
 
 const circular: Record<string, unknown> = { name: "loop" };
 circular.self = circular;
@@ -34,4 +34,16 @@ assert.equal(event.spans[0]!.description, "GET https://www.googleapis.com/calend
 assert.deepEqual(event.spans[0]!.data, { "db.statement": "select $1" });
 assert.equal(event.sdkProcessingMetadata.normalizedRequest.url, "/invite/kept-internal", "SDK internals untouched");
 assert.equal(circular.self, circular);
+
+// DOM descriptions (click breadcrumbs, INP span names) drop labels with event titles.
+assert.equal(
+  scrubTelemetry({ message: 'div.grid > button.event[aria-label="Dentist "Dr. X", 9:00, Family"]' }).message,
+  "div.grid > button.event",
+);
+
+// Console breadcrumbs carry live app objects: never rewritten, only detached.
+const conflict = { url: "https://zoom.us/j/1?pwd=abc" };
+const crumb = scrubBreadcrumb({ category: "console", message: "API error", data: { arguments: ["API error", conflict] } });
+assert.equal(conflict.url, "https://zoom.us/j/1?pwd=abc");
+assert.equal("data" in crumb, false);
 console.log("telemetry scrub: ok");
