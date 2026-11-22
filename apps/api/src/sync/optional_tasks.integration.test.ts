@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { auth } from "@musubi/auth";
+import { config } from "@musubi/config";
 import { google, microsoft } from "better-auth/social-providers";
 import { randomUUID } from "node:crypto";
 import { createServer } from "node:http";
@@ -248,7 +249,11 @@ async function main() {
       }
       assert.equal(taskCalls, callsBeforeNarrowedWrites);
       // Exercise Better Auth's own configured refresh HTTP, not just our adapter.
-      await oauthProvider.refreshAccessToken!("fixture-refresh");
+      // Our Microsoft refresh override reads the configured app, which CI leaves
+      // unset; Better Auth 1.7 refuses a refresh without a client id.
+      const configured = { ...config.social };
+      Object.assign(config.social, { microsoftClientID: "fixture-client", microsoftClientSecret: "fixture-secret" });
+      try { await oauthProvider.refreshAccessToken!("fixture-refresh"); } finally { Object.assign(config.social, configured); }
       assert.equal(refreshBodies[refreshBodies.length - 1].get("scope"), null, "Better Auth refresh must neither narrow nor escalate the stored grant");
       returnedScope = undefined;
       await update({ scope: `${CALENDAR_SCOPE[provider]},${TASK_SCOPE[provider]}` });

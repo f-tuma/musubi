@@ -74,8 +74,11 @@ export async function handlerDisconnectAccount(req: Request, res: Response) {
       // above — so on refusal fall back to clearing this provider's stored
       // tokens/scope: sync stops, but the login account survives.
       try {
+        // Better Auth 1.7 selects the local account row, not the provider-side id.
+        const linked = await getOAuthCredentials(req.user!.id, provider, accountId);
+        if (!linked) throw new Error("OAuth account not found");
         await auth.api.unlinkAccount({
-          body: { providerId: provider, accountId },
+          body: { accountId: linked.id },
           headers: new Headers(req.headers as Record<string, string>),
         });
       } catch {

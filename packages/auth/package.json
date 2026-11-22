@@ -13,11 +13,11 @@
   "author": "Filip Tůma (https://f-tuma.dev)",
   "license": "MIT",
   "dependencies": {
-    "@better-auth/expo": "1.6.23",
+    "@better-auth/expo": "1.7.27",
     "@musubi/config": "workspace:*",
     "@musubi/db": "workspace:*",
     "@musubi/emails": "workspace:*",
     "@musubi/types": "workspace:*",
-    "better-auth": "1.6.23"
+    "better-auth": "1.7.27"
   }
 }

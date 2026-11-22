@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { getCookies } from "better-auth/cookies";
+import { microsoft } from "better-auth/social-providers";
 import { withVerifiedLanding } from "./verified_landing";
 
 // The installed auth library owns cookie naming. An unset override must keep
@@ -45,6 +46,13 @@ assert.equal(
 assert.equal(
   withVerifiedLanding(`${base}&callbackURL=`),
   `${base}&callbackURL=%2Femail-verified`,
+);
+
+// Stored Microsoft accounts and every sync row are keyed by the 1.6 `sub`; the
+// pnpm patch must survive Better Auth bumps or returning users get new accounts.
+assert.equal(
+  microsoft({ clientId: "c", clientSecret: "s" }).accountSubject({ tokens: {}, profile: { sub: "pairwise-sub", oid: "directory-oid" } as never }),
+  "pairwise-sub",
 );
 
 console.log("auth verification landing self-check: OK");

@@ -27,7 +27,7 @@
     "@musubi/types": "workspace:*",
     "@sentry/node": "11.16.0",
     "@types/cors": "^2.8.19",
-    "better-auth": "1.6.23",
+    "better-auth": "1.7.27",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
