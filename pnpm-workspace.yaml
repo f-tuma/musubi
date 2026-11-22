@@ -23,8 +23,8 @@ overrides:
   esbuild@<=0.24.2: ">=0.25.0"
   js-yaml@<4.3.2: 4.3.2
   # Keep query-string 7 named exports used by Expo Router while upgrading its decoder.
-  query-string@7.1.3>decode-uri-component: 0.5.0
-  qs@<6.16.0: 6.16.0
+  query-string@7.1.3>decode-uri-component: 0.5.1
+  qs@<6.16.1: 6.16.1
   # xcode uses only the named CommonJS v4 API, retained by uuid 11.
   xcode>uuid: 11.1.1
   nanoid@<3.3.18: 3.3.18
@@ -40,7 +40,9 @@ overrides:
   compression@<1.8.2: 1.8.2
   devalue@>=5.0.0 <5.9.3: 5.9.3
   http-cache-semantics@>=4.0.0 <4.3.0: 4.3.0
-  node-forge@<1.4.1: 1.4.1
+  node-forge@<1.4.3: 1.4.3
+  minimatch@>=7.0.0 <11.0.1: 11.0.9
+  katex@<0.18.2: 0.18.2
   shell-quote@>=1.8.4 <1.11.0: 1.11.0
   source-map-js@>=1.0.0 <1.2.2: 1.2.2
   undici@>=7.0.0 <7.30.1: 7.30.1
@@ -60,8 +62,5 @@ minimumReleaseAgeExclude:
   - babel-preset-expo
   - '@vardum/cli@0.8.0'
   - '@vardum/shared@0.4.0'
-  # Exact upstream RSA verification fix, released today; never a publisher glob.
-  # https://github.com/digitalbazaar/forge/security/advisories/GHSA-2g46-22mc-6gwp
-  - node-forge@1.4.1
 patchedDependencies:
   query-string@7.1.3: patches/query-string@7.1.3.patch
