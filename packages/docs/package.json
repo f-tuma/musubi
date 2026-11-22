@@ -13,9 +13,9 @@
     "astro": "astro"
   },
   "dependencies": {
-    "@astrojs/node": "11.1.3",
+    "@astrojs/node": "11.1.14",
     "@astrojs/starlight": "^0.41.7",
-    "astro": "~7.3.3",
+    "astro": "~7.4.13",
     "cookie": "^2.0.1",
     "astro-mermaid": "^2.1.0",
     "mermaid": "^11.17.0",
