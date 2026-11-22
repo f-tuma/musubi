@@ -4,6 +4,7 @@ import {
 	createExternalUser,
 	deleteMusubiAccount,
 	getCalendar,
+	getCalendarIDFromToken,
 	getMusubiAccounts,
 	getUserByTokenHash,
 	joinCalendarFromInvite,
@@ -79,6 +80,9 @@ export async function handlerFederationAccept(req: Request, res: Response) {
 	} else {
 		// The submitted profile is display-only on first contact. Never look up an
 		// existing shadow by these unverified claims.
+		// Check the invite first: a shadow row holds its email for good, so a junk
+		// token must not mint one (it would lock that address out of this server).
+		await getCalendarIDFromToken(token);
 		shadow = await createExternalUser({ name, email, image, homeServer });
 	}
 

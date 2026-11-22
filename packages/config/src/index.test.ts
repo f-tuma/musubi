@@ -10,10 +10,12 @@ async function main() {
   process.env.SYNC_OPERATION_V1_ENCODER_ENABLED = "true";
   const {
     config,
+    isSignUpAllowed,
     parseDevAuthCookiePrefix,
     parseEnvironment,
     parseExternalDeliveryRecoveryMode,
     parseMediaConfig,
+    parseSignUpAllowlist,
     parseSyncOperationV1EncoderEnabled,
     validateAuthSecret,
   } = await import("./index");
@@ -97,6 +99,28 @@ async function main() {
   assert.doesNotThrow(() =>
     validateAuthSecret("prod", "0123456789abcdef0123456789abcdef"),
   );
+
+  // Unset stays open, so upgrading never locks an existing instance.
+  assert.equal(parseSignUpAllowlist(undefined, undefined), null);
+  assert.equal(parseSignUpAllowlist("", ""), null);
+  assert.equal(parseSignUpAllowlist("false", ""), null);
+  assert.equal(isSignUpAllowed(null, "anyone@example.com"), true);
+  assert.deepEqual(parseSignUpAllowlist("true", undefined), []);
+  assert.equal(isSignUpAllowed([], "anyone@example.com"), false);
+  const allowlist = parseSignUpAllowlist("true", " Ana@Example.com , @family.cz ,");
+  assert.deepEqual(allowlist, ["ana@example.com", "@family.cz"]);
+  assert.equal(isSignUpAllowed(allowlist, "ANA@example.com"), true);
+  assert.equal(isSignUpAllowed(allowlist, "bob@example.com"), false);
+  assert.equal(isSignUpAllowed(allowlist, "bob@family.cz"), true);
+  // The "@" anchors the domain: a lookalike or a subdomain is someone else.
+  assert.equal(isSignUpAllowed(allowlist, "bob@evilfamily.cz"), false);
+  assert.equal(isSignUpAllowed(allowlist, "bob@family.cz.evil.com"), false);
+  for (const value of ["1", "TRUE", "yes", " true"]) {
+    assert.throws(() => parseSignUpAllowlist(value, undefined), /Invalid DISABLE_SIGNUPS/);
+  }
+  assert.throws(() => parseSignUpAllowlist("true", "family.cz"), /Invalid SIGNUP_ALLOWED_EMAILS entry/);
+  // An allowlist on an open server would read as protection it does not give.
+  assert.throws(() => parseSignUpAllowlist(undefined, "ana@example.com"), /only applies with DISABLE_SIGNUPS=true/);
 
   assert.deepEqual(parseMediaConfig({ MEDIA_DIR: "/tmp/media" }), {
     localDir: "/tmp/media",

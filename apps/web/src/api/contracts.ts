@@ -137,6 +137,9 @@ export const ServerCapabilitiesSchema = z
     // VAPID public key, or null on a server with no push keys. Absent entirely
     // on an API older than this field, which means the same thing.
     pushPublicKey: z.string().nullish(),
+    // False when the operator closed registration to everyone. Absent on an
+    // older API, which always accepted new accounts.
+    signUp: z.boolean().default(true),
   })
   .loose();
 

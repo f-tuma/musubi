@@ -126,6 +126,12 @@ async function main() {
       null,
     );
 
+    // A junk token mints no shadow row: one would hold that email for good and
+    // lock the address out of this server.
+    const squatEmail = `squat-${suffix}@example.test`;
+    await assert.rejects((await acceptInvite(randomUUID())).run(squatEmail), /Invite not found/);
+    assert.deepEqual(await db.select({ id: user.id }).from(user).where(eq(user.email, squatEmail)), []);
+
     // Claiming the existing shadow's unverified profile without its member
     // token creates an isolated identity; it cannot inherit calendar A.
     const unproved = await (await acceptInvite(inviteID))
