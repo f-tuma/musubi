@@ -87,6 +87,7 @@ Edit the `.env` you just downloaded and set your production values. Key variable
 | `APPLE_TEAM_ID` | Apple Developer Team ID — serves the apple-app-site-association file so iOS invite links open the app directly (universal links). Optional; unset → the Safari hand-off still works |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `FROM_EMAIL` | Outgoing mail for password-reset, email-confirmation and account-deletion emails. Port 465 uses implicit TLS; other ports require STARTTLS. The API verifies SMTP once before listening; restart it after changing these values |
 | `REQUIRE_EMAIL_VERIFICATION` | `true` refuses sign-in until the address is confirmed. Needs SMTP; the API refuses to boot without it. See [Requiring confirmed email addresses](#requiring-confirmed-email-addresses) |
+| `DISABLE_SIGNUPS`, `SIGNUP_ALLOWED_EMAILS` | `DISABLE_SIGNUPS=true` stops strangers from creating accounts; `SIGNUP_ALLOWED_EMAILS` lists the addresses that may still register. See [Closing registration](#closing-registration) |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` | Web Push, so the server can send event reminders to a browser that is closed. Generate a pair with `npx web-push generate-vapid-keys`; they identify **this** server to the browser vendors' push services, so they are per-install and the private one is a secret. `VAPID_SUBJECT` must be a `mailto:` address or an https URL — push services reject anything else. The public and private keys must be set together: the API refuses to boot with one of them, because advertising a key it cannot sign with would let browsers subscribe to reminders that then fail silently on every send |
 | `CALDAV_ENC_KEY` | Encrypts stored CalDAV passwords and federated Musubi member tokens — required before anyone connects a CalDAV account or a federated calendar |
 | `PUBLIC_HOST` | The hostname the default gateway serves (e.g. `musubi.example.com` for automatic HTTPS, or `:80` behind another proxy). Dokploy sets its gateway to `:80` internally; configure its public hostname as a UI Domain |
@@ -237,6 +238,38 @@ The API refuses to start when this is `true` and `SMTP_HOST` is empty. That pair
 cannot serve anyone — the account is created, the confirmation never arrives, and
 nobody can sign in — so it fails at boot rather than at the first sign-up.
 </Aside>
+
+## Closing registration
+
+Open by default. A private server usually wants only the people it was set up
+for, so close it and list who may still join:
+
+```sh
+DISABLE_SIGNUPS=true
+SIGNUP_ALLOWED_EMAILS=partner@example.com,@family.example
+```
+
+Entries are exact addresses or `@domain` for everyone at that domain (not its
+subdomains). The rule covers every way an account is created — passphrase,
+emailed code, Google, Microsoft and Apple — and leaves existing accounts alone.
+To invite someone, add their address and restart the API; they then register
+normally. With an empty list nobody can register, and the web client and the
+phone app (from its next release) hide "Create account". Guests from other Musubi
+servers still join shared calendars through their invite link: they keep their
+account at home and cannot sign in here directly.
+
+<Aside type="caution" title="An address on the list is not proof of owning it">
+Without `REQUIRE_EMAIL_VERIFICATION=true`, whoever types a listed address first
+gets the account. Turn verification on, or list exact addresses and have the
+person sign up promptly. A whole domain is only as safe as verification makes it.
+Social sign-in trusts the address the provider reports: with Microsoft sign-in on
+the default `common` tenant, make sure your Entra app rejects unverified email
+claims, or leave Microsoft unconfigured on a closed server.
+</Aside>
+
+A typo in either variable stops the API at boot, and so does a list without
+`DISABLE_SIGNUPS=true`: a server that looks closed but is not is worse than one
+that does not start.
 
 ## How one origin is split
 

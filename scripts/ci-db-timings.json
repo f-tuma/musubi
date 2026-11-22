@@ -1,182 +1,582 @@
 {
-  "schemaVersion": 1,
-  "recordedAt": "2026-10-26",
+  "schemaVersion": 2,
+  "recordedAt": "2026-11-07",
   "aggregation": "median of clean successful first attempts; obsolete identities omitted",
   "sources": [
     {
-      "runId": 40324952118,
+      "runId": 42267168855,
       "runAttempt": 1,
-      "headSha": "c6e5484c7f819dd3bc7555905bef3afa9f193f7a",
-      "url": "https://github.com/f-tuma/musubi/actions/runs/40324952118",
+      "headSha": "d752597c8acf8777441519757d54a2e4734d8ea1",
+      "url": "https://github.com/f-tuma/musubi/actions/runs/42267168855",
       "artifacts": [
         {
-          "id": 12651102442,
+          "id": 13528147948,
           "name": "database-timings-1",
-          "reportSha256": "0545ad4f38baa30f496f18c73a70edda925e3ecd343b54c91a19daf7d55cf812",
-          "selectedSha256": "7faba57a4ebfebb93e5fb2cd411d8733821bfaf1617a694f33b02e0e88722393"
+          "reportSha256": "c045240318e7dc274638b559195fa8f03ebd3ecbc6ac748d9b5218a1f1414994",
+          "selectedSha256": "1c33d8320b3d9a2b952fa1b4e1be93e33e5de032f10a1811e6f27b4acd2ede76"
         },
         {
-          "id": 12651042584,
+          "id": 13528431869,
           "name": "database-timings-2",
-          "reportSha256": "fcee268c358e774c10acd351b3fed06d0319c728c1d43fe7d02b016348b7beba",
-          "selectedSha256": "77cc1014959fdb39852ab402b2d1434305560113797b10cc8f0964fe5afa5eeb"
+          "reportSha256": "dc75cebf8fd076098aa988a270682f161b42ee0fb503bb8b380b82d82cda3601",
+          "selectedSha256": "c20183ec6f9dd1532f6b17bddbf7617a091ce9a74cf09f52f4299368d55576f5"
         },
         {
-          "id": 12651476710,
+          "id": 13527547854,
           "name": "database-timings-3",
-          "reportSha256": "cbdab5d87c67d50d3247315af9cc29fdc1cea23888c11d62676cb6e2e36eebcb",
-          "selectedSha256": "96e9b860c07b2cd4d8fde3f3274555bc516e502b7e85fb70d6e1fa33294e6b95"
+          "reportSha256": "a222f5f5874919ec7aa361dd1c76cee748999cedcc213f85320cde9b05c5eaf3",
+          "selectedSha256": "e04d0f038988a5f96f91100846de40ca75623bf83900e3135a309e7ee45ea2cd"
         },
         {
-          "id": 12651705039,
+          "id": 13527424232,
           "name": "database-timings-4",
-          "reportSha256": "6e3935ee138513dc5bcac81f731df72567a9b49816b143b6befe54c0619b87e8",
-          "selectedSha256": "fed1ff55e57c9afe14953c7890091d7f96e1747558dabae35a6e668150b858b9"
+          "reportSha256": "a09031992c8d47ae7afc0f7d769136be992b53f2dd8462b29829aac058e6d432",
+          "selectedSha256": "04b14f73595521ab0b3c79ae307224f2ba33be3f4daf3312ba689240578f840a"
         }
-      ]
+      ],
+      "reservation": {
+        "jobId": 128061986910,
+        "job": "Database integration (1/4)",
+        "step": "Frozen standalone candidate and installed conformance",
+        "stepNumber": 10,
+        "startedAt": "2026-11-06T18:09:30Z",
+        "completedAt": "2026-11-06T18:16:07Z",
+        "durationMs": 397000
+      }
+    },
+    {
+      "runId": 42270005855,
+      "runAttempt": 1,
+      "headSha": "7d146cb94e9d26b5cdcab9bb04290eb827ba7f2d",
+      "url": "https://github.com/f-tuma/musubi/actions/runs/42270005855",
+      "artifacts": [
+        {
+          "id": 13530215769,
+          "name": "database-timings-1",
+          "reportSha256": "2e8154727706075ea358f7ae5b3d63517da5d40290439cb17aa54e45470139f4",
+          "selectedSha256": "1c33d8320b3d9a2b952fa1b4e1be93e33e5de032f10a1811e6f27b4acd2ede76"
+        },
+        {
+          "id": 13528713924,
+          "name": "database-timings-2",
+          "reportSha256": "71eb8dd2ece5dd1c3dd33fd3a627952dcef750d134889de26fdc3af4f8e2e20e",
+          "selectedSha256": "c20183ec6f9dd1532f6b17bddbf7617a091ce9a74cf09f52f4299368d55576f5"
+        },
+        {
+          "id": 13528109245,
+          "name": "database-timings-3",
+          "reportSha256": "97fa5b650add3b416f54a6bc9f10fc2d44fbc1f0c9af6eafa6226ec208d8fa80",
+          "selectedSha256": "e04d0f038988a5f96f91100846de40ca75623bf83900e3135a309e7ee45ea2cd"
+        },
+        {
+          "id": 13528634417,
+          "name": "database-timings-4",
+          "reportSha256": "a67d535753f0a5a3e134d54d348282ba7cd462297c199633e6a9b2edf40c8a38",
+          "selectedSha256": "04b14f73595521ab0b3c79ae307224f2ba33be3f4daf3312ba689240578f840a"
+        }
+      ],
+      "reservation": {
+        "jobId": 128071806981,
+        "job": "Database integration (1/4)",
+        "step": "Frozen standalone candidate and installed conformance",
+        "stepNumber": 10,
+        "startedAt": "2026-11-06T18:29:37Z",
+        "completedAt": "2026-11-06T18:37:35Z",
+        "durationMs": 478000
+      }
+    },
+    {
+      "runId": 42273319273,
+      "runAttempt": 1,
+      "headSha": "cffdf67c516f0e9e6e8e633732d9a21475c892e4",
+      "url": "https://github.com/f-tuma/musubi/actions/runs/42273319273",
+      "artifacts": [
+        {
+          "id": 13533825168,
+          "name": "database-timings-1",
+          "reportSha256": "89c4e5fcc792cd62d98b346beb93b6ce3b7f0ee2ef5f7402d0820503a0a40b4e",
+          "selectedSha256": "1c33d8320b3d9a2b952fa1b4e1be93e33e5de032f10a1811e6f27b4acd2ede76"
+        },
+        {
+          "id": 13531193783,
+          "name": "database-timings-2",
+          "reportSha256": "a9492c5f277bfc9bcc2dd6991bcacdb8f86853612fdb65fd674a66155c4621a5",
+          "selectedSha256": "c20183ec6f9dd1532f6b17bddbf7617a091ce9a74cf09f52f4299368d55576f5"
+        },
+        {
+          "id": 13531368570,
+          "name": "database-timings-3",
+          "reportSha256": "852157615e4def756d6caa0a8251f06f0028cfc989eeba88c132fcacf75693fe",
+          "selectedSha256": "e04d0f038988a5f96f91100846de40ca75623bf83900e3135a309e7ee45ea2cd"
+        },
+        {
+          "id": 13531509024,
+          "name": "database-timings-4",
+          "reportSha256": "42346d65a935212bb10ddf103ede0a75c83fc98249b7d11e9551dc4987e915ad",
+          "selectedSha256": "04b14f73595521ab0b3c79ae307224f2ba33be3f4daf3312ba689240578f840a"
+        }
+      ],
+      "reservation": {
+        "jobId": 128083191648,
+        "job": "Database integration (1/4)",
+        "step": "Frozen standalone candidate and installed conformance",
+        "stepNumber": 10,
+        "startedAt": "2026-11-06T18:52:12Z",
+        "completedAt": "2026-11-06T19:01:37Z",
+        "durationMs": 565000
+      }
+    },
+    {
+      "runId": 42276574750,
+      "runAttempt": 1,
+      "headSha": "b1147db5cf7c1ad1d70e0793921fc69aeceada9f",
+      "url": "https://github.com/f-tuma/musubi/actions/runs/42276574750",
+      "artifacts": [
+        {
+          "id": 13533468821,
+          "name": "database-timings-1",
+          "reportSha256": "f8cac8279b9cd646791ef5960f2c378725207d2ec356ce161439348f2d6674dc",
+          "selectedSha256": "1c33d8320b3d9a2b952fa1b4e1be93e33e5de032f10a1811e6f27b4acd2ede76"
+        },
+        {
+          "id": 13533149399,
+          "name": "database-timings-2",
+          "reportSha256": "d66f2b7f26b4718118574ff08d9241c792b84ab18a6540adfb04cb26336e205b",
+          "selectedSha256": "c20183ec6f9dd1532f6b17bddbf7617a091ce9a74cf09f52f4299368d55576f5"
+        },
+        {
+          "id": 13532264667,
+          "name": "database-timings-3",
+          "reportSha256": "d96feedac33d13fea2f1867605496a9dc2ef37d4fba82089f92bb54d09bff9b2",
+          "selectedSha256": "e04d0f038988a5f96f91100846de40ca75623bf83900e3135a309e7ee45ea2cd"
+        },
+        {
+          "id": 13534221134,
+          "name": "database-timings-4",
+          "reportSha256": "15d7281807bb0698e9c69fc3b296c108f20a0f5e10536bd789f22022df1df385",
+          "selectedSha256": "04b14f73595521ab0b3c79ae307224f2ba33be3f4daf3312ba689240578f840a"
+        }
+      ],
+      "reservation": {
+        "jobId": 128094307530,
+        "job": "Database integration (1/4)",
+        "step": "Frozen standalone candidate and installed conformance",
+        "stepNumber": 10,
+        "startedAt": "2026-11-06T19:13:01Z",
+        "completedAt": "2026-11-06T19:20:48Z",
+        "durationMs": 467000
+      }
+    },
+    {
+      "runId": 42280511745,
+      "runAttempt": 1,
+      "headSha": "5433784b7a9edf242d17b53fb4bd334af90df7c5",
+      "url": "https://github.com/f-tuma/musubi/actions/runs/42280511745",
+      "artifacts": [
+        {
+          "id": 13536935641,
+          "name": "database-timings-1",
+          "reportSha256": "148baee786254f7876f1420dc358419d74a4f84ca36e40935e906c7196189ec6",
+          "selectedSha256": "1c33d8320b3d9a2b952fa1b4e1be93e33e5de032f10a1811e6f27b4acd2ede76"
+        },
+        {
+          "id": 13535861422,
+          "name": "database-timings-2",
+          "reportSha256": "1bc10d3234ea381677d88d860aaefd3fee0f32c2123926ada309d8715f73e39e",
+          "selectedSha256": "c20183ec6f9dd1532f6b17bddbf7617a091ce9a74cf09f52f4299368d55576f5"
+        },
+        {
+          "id": 13534324612,
+          "name": "database-timings-3",
+          "reportSha256": "f13b39ea81eaca74033af8d1a1e140927978165e9950f032a2cd6d2d1ea975c3",
+          "selectedSha256": "e04d0f038988a5f96f91100846de40ca75623bf83900e3135a309e7ee45ea2cd"
+        },
+        {
+          "id": 13534469930,
+          "name": "database-timings-4",
+          "reportSha256": "8b7dd4f208e8daade64603bc2fb19a6400aae4be9ed3e3a3fd1144c7a08e4992",
+          "selectedSha256": "04b14f73595521ab0b3c79ae307224f2ba33be3f4daf3312ba689240578f840a"
+        }
+      ],
+      "reservation": {
+        "jobId": 128107941445,
+        "job": "Database integration (1/4)",
+        "step": "Frozen standalone candidate and installed conformance",
+        "stepNumber": 10,
+        "startedAt": "2026-11-06T19:40:41Z",
+        "completedAt": "2026-11-06T19:49:45Z",
+        "durationMs": 544000
+      }
+    },
+    {
+      "runId": 42298913715,
+      "runAttempt": 1,
+      "headSha": "0ddc93670f5edb0b593d9e5fc9d7949d47bd3f8c",
+      "url": "https://github.com/f-tuma/musubi/actions/runs/42298913715",
+      "artifacts": [
+        {
+          "id": 13543213550,
+          "name": "database-timings-1",
+          "reportSha256": "bd79d97014e8dd9f886b9912376bf099ce064eb7f263325d286cb38fe7a99a0c",
+          "selectedSha256": "8f3567ffeb3f292e26f0be74b7e2457ba32a0ea0f5f9d175531002ef9c021e01"
+        },
+        {
+          "id": 13542694850,
+          "name": "database-timings-2",
+          "reportSha256": "1c3ab730b0e8da897d03dfeccf2b0b5dd5a25b7dfb516583199c2f0f0d36897c",
+          "selectedSha256": "e3634720799c47849697daa12678a66993223b676a260beb9d249ad6213e6357"
+        },
+        {
+          "id": 13542959124,
+          "name": "database-timings-3",
+          "reportSha256": "1a0cd5d40150f7f11ecc7749dfad8e2b5f8d0a81a553741b47f72f013f6075a1",
+          "selectedSha256": "c8913276ae15e1c721c059bd1082e7811b9d53a4ba61698b1c755b151be7700c"
+        },
+        {
+          "id": 13542924525,
+          "name": "database-timings-4",
+          "reportSha256": "7336f0d65a186478f375cbbacc62bc1b21615935f7dd355c8d0cef035a923e7d",
+          "selectedSha256": "9c9e877b71fcbbf228237bb2449635e2997dd39d98672df0d35cbe8946b8179f"
+        }
+      ],
+      "reservation": {
+        "jobId": 128171271645,
+        "job": "Database integration (1/4)",
+        "step": "Frozen standalone candidate and installed conformance",
+        "stepNumber": 10,
+        "startedAt": "2026-11-06T21:49:03Z",
+        "completedAt": "2026-11-06T21:55:47Z",
+        "durationMs": 404000
+      }
+    },
+    {
+      "runId": 42301508386,
+      "runAttempt": 1,
+      "headSha": "f10d62206c975b21004017a33508334f1d664d5f",
+      "url": "https://github.com/f-tuma/musubi/actions/runs/42301508386",
+      "artifacts": [
+        {
+          "id": 13546055038,
+          "name": "database-timings-1",
+          "reportSha256": "6cfc7b60993ce17c041129105246b95eca8b0f5bbcd3ec56a93be77505d4d271",
+          "selectedSha256": "8f3567ffeb3f292e26f0be74b7e2457ba32a0ea0f5f9d175531002ef9c021e01"
+        },
+        {
+          "id": 13543554311,
+          "name": "database-timings-2",
+          "reportSha256": "e54166ae1276f0cb1d68d9bbc51fd8a99d14e4e80734b2eda5372d3449e44b26",
+          "selectedSha256": "e3634720799c47849697daa12678a66993223b676a260beb9d249ad6213e6357"
+        },
+        {
+          "id": 13544672949,
+          "name": "database-timings-3",
+          "reportSha256": "40cac5c44718d8e31cba58d1cac597110cdb6d2e20cec6565a7840edda1db8f3",
+          "selectedSha256": "c8913276ae15e1c721c059bd1082e7811b9d53a4ba61698b1c755b151be7700c"
+        },
+        {
+          "id": 13543504529,
+          "name": "database-timings-4",
+          "reportSha256": "8cd1b5e2ca9d1e5c51376082c4a69eb1d0ba16cc71d1441ddcf014ffdf7d9e41",
+          "selectedSha256": "9c9e877b71fcbbf228237bb2449635e2997dd39d98672df0d35cbe8946b8179f"
+        }
+      ],
+      "reservation": {
+        "jobId": 128180174798,
+        "job": "Database integration (1/4)",
+        "step": "Frozen standalone candidate and installed conformance",
+        "stepNumber": 10,
+        "startedAt": "2026-11-06T22:10:53Z",
+        "completedAt": "2026-11-06T22:20:54Z",
+        "durationMs": 601000
+      }
+    },
+    {
+      "runId": 42360032235,
+      "runAttempt": 1,
+      "headSha": "f5336dad122591bf02aa52c249de7d189f740235",
+      "url": "https://github.com/f-tuma/musubi/actions/runs/42360032235",
+      "artifacts": [
+        {
+          "id": 13570335247,
+          "name": "database-timings-1",
+          "reportSha256": "ccf4462c9589042934ec074a48e55f660bd4cfb452beeaa8abf7a35610029ecb",
+          "selectedSha256": "a6ecc1bd82bcd1c1ec70e5d5931eafed2f4012897cde550c73d4decb5e8f9913"
+        },
+        {
+          "id": 13570060272,
+          "name": "database-timings-2",
+          "reportSha256": "c7e0cf931917baaf1ad8c89341afa9c950295041678ff7ee46a506c893b52aec",
+          "selectedSha256": "def33161f90ef304220b6abeb336e480b11f61035d26d69f0878090513259c78"
+        },
+        {
+          "id": 13569970499,
+          "name": "database-timings-3",
+          "reportSha256": "6abf9f81c2930bd673c323aa0eada1348e3a96ff35233f36a4b0a962c83848e1",
+          "selectedSha256": "fa5c5bd7780cc435ec1878e818501f488033a1e09824060cb19242c68863196e"
+        },
+        {
+          "id": 13569550912,
+          "name": "database-timings-4",
+          "reportSha256": "53a4eb58fbc120153bb2d6111afadcfb8f53f9fb9c074d1383eeb41efa1d8e43",
+          "selectedSha256": "47e5426765121ab9bab78705203e5b78016d7cf16e02c7f4e199433bf698f78c"
+        }
+      ],
+      "reservation": {
+        "jobId": 128366269529,
+        "job": "Database integration (1/4)",
+        "step": "Frozen standalone candidate and installed conformance",
+        "stepNumber": 10,
+        "startedAt": "2026-11-07T09:39:00Z",
+        "completedAt": "2026-11-07T09:47:55Z",
+        "durationMs": 535000
+      }
+    },
+    {
+      "runId": 42361438493,
+      "runAttempt": 1,
+      "headSha": "83eb765300ca1114d6c1eb7aa8750b541e75f353",
+      "url": "https://github.com/f-tuma/musubi/actions/runs/42361438493",
+      "artifacts": [
+        {
+          "id": 13570347954,
+          "name": "database-timings-1",
+          "reportSha256": "0de4bad1b9cc95da735d41469478d1d87b11b2ea9aee41714f920f88c4b28408",
+          "selectedSha256": "a6ecc1bd82bcd1c1ec70e5d5931eafed2f4012897cde550c73d4decb5e8f9913"
+        },
+        {
+          "id": 13570197774,
+          "name": "database-timings-2",
+          "reportSha256": "d0c8e90345a9dbe68830dc643e761b4e7a532414d891d6a975bc5eb7233336cd",
+          "selectedSha256": "def33161f90ef304220b6abeb336e480b11f61035d26d69f0878090513259c78"
+        },
+        {
+          "id": 13570371213,
+          "name": "database-timings-3",
+          "reportSha256": "c9f90c5eb8b475c62500ecc1eb0a220dab43e2272507fd91bc7a43c37896c6cb",
+          "selectedSha256": "fa5c5bd7780cc435ec1878e818501f488033a1e09824060cb19242c68863196e"
+        },
+        {
+          "id": 13570376312,
+          "name": "database-timings-4",
+          "reportSha256": "731550ddcde628a17c65625760be3649c044a6347ee0abc6daeac71632ed03be",
+          "selectedSha256": "47e5426765121ab9bab78705203e5b78016d7cf16e02c7f4e199433bf698f78c"
+        }
+      ],
+      "reservation": {
+        "jobId": 128370488970,
+        "job": "Database integration (1/4)",
+        "step": "Frozen standalone candidate and installed conformance",
+        "stepNumber": 10,
+        "startedAt": "2026-11-07T09:59:34Z",
+        "completedAt": "2026-11-07T10:09:19Z",
+        "durationMs": 585000
+      }
+    },
+    {
+      "runId": 42372307201,
+      "runAttempt": 1,
+      "headSha": "3bb723b68078b9a2585b26585552ddfcad532f2d",
+      "url": "https://github.com/f-tuma/musubi/actions/runs/42372307201",
+      "artifacts": [
+        {
+          "id": 13574084818,
+          "name": "database-timings-1",
+          "reportSha256": "6031ad68009d204a6d162d9c00b9f85585b70ee3387b21d1bebfe81dcbd47f15",
+          "selectedSha256": "a6ecc1bd82bcd1c1ec70e5d5931eafed2f4012897cde550c73d4decb5e8f9913"
+        },
+        {
+          "id": 13574557456,
+          "name": "database-timings-2",
+          "reportSha256": "aca807b029f54c3f6c3787d35dab08202aef2343ce6ee734c951e6e356bcd844",
+          "selectedSha256": "def33161f90ef304220b6abeb336e480b11f61035d26d69f0878090513259c78"
+        },
+        {
+          "id": 13574278077,
+          "name": "database-timings-3",
+          "reportSha256": "426e07814e401d4fde9a6bb572b522b44a14a0396ca6abc0a23ad5622ab132a6",
+          "selectedSha256": "fa5c5bd7780cc435ec1878e818501f488033a1e09824060cb19242c68863196e"
+        },
+        {
+          "id": 13574791203,
+          "name": "database-timings-4",
+          "reportSha256": "b96494a03c0f9ff1b5e6ee2fcbe6594753cac646022dc1b238c0ac79551258d5",
+          "selectedSha256": "47e5426765121ab9bab78705203e5b78016d7cf16e02c7f4e199433bf698f78c"
+        }
+      ],
+      "reservation": {
+        "jobId": 128402774424,
+        "job": "Database integration (1/4)",
+        "step": "Frozen standalone candidate and installed conformance",
+        "stepNumber": 10,
+        "startedAt": "2026-11-07T12:32:25Z",
+        "completedAt": "2026-11-07T12:41:24Z",
+        "durationMs": 539000
+      }
     }
   ],
+  "reservations": {
+    "total": 4,
+    "reservedMs": [
+      537000,
+      0,
+      0,
+      0
+    ],
+    "basis": "median duration of the \"Frozen standalone candidate and installed conformance\" step of \"Database integration (1/4)\", from each source run attempt's jobs.json; reserved on shard 1 of 4"
+  },
   "durationsMs": {
-    "apps/api/src/federation.integration.test.ts": 11026,
-    "apps/api/src/federation_gateway.integration.test.ts": 11089,
-    "apps/api/src/handlers/calendar_pages.integration.test.ts": 10985,
-    "apps/api/src/handlers/connections.integration.test.ts": 11020,
-    "apps/api/src/handlers/event_capabilities.integration.test.ts": 5489,
-    "apps/api/src/handlers/event_create_retry.integration.test.ts": 12624,
-    "apps/api/src/handlers/event_delivery.integration.test.ts": 3056,
-    "apps/api/src/handlers/event_resolution.integration.test.ts": 15304,
-    "apps/api/src/handlers/event_revision.integration.test.ts": 2981,
-    "apps/api/src/handlers/event_scope.integration.test.ts": 1799,
-    "apps/api/src/handlers/event_time.integration.test.ts": 2286,
-    "apps/api/src/handlers/graph_series_create.integration.test.ts": 13343,
-    "apps/api/src/handlers/provider_event_state.integration.test.ts": 1840,
-    "apps/api/src/handlers/task_link_capabilities.integration.test.ts": 1745,
-    "apps/api/src/handlers/tasks.integration.test.ts": 2609,
-    "apps/api/src/handlers/user_calendar_deletion.integration.test.ts": 1694,
-    "apps/api/src/metrics.integration.test.ts": 1422,
-    "apps/api/src/metrics_outbox.integration.test.ts": 1036,
-    "apps/api/src/middleware/require_client_version.integration.test.ts": 4005,
-    "apps/api/src/notification_google_privacy.integration.test.ts": 1087,
-    "apps/api/src/reminder_dispatch.integration.test.ts": 1099,
-    "apps/api/src/sync/adapters/provider_create_recovery.integration.test.ts": 11961,
-    "apps/api/src/sync/adapters/provider_event_writes.integration.test.ts": 14382,
-    "apps/api/src/sync/bootstrap.integration.test.ts": 12061,
-    "apps/api/src/sync/caldav_access.integration.test.ts": 7829,
-    "apps/api/src/sync/caldav_alarms.integration.test.ts": 9102,
-    "apps/api/src/sync/caldav_occurrences.integration.test.ts": 1042,
-    "apps/api/src/sync/caldav_organizer.integration.test.ts": 19108,
-    "apps/api/src/sync/caldav_rsvp.integration.test.ts": 19362,
-    "apps/api/src/sync/caldav_scope.integration.test.ts": 118214,
-    "apps/api/src/sync/caldav_shared_create_delivery.integration.test.ts": 19238,
-    "apps/api/src/sync/caldav_shared_delete_delivery.integration.test.ts": 19588,
-    "apps/api/src/sync/caldav_sync_token.integration.test.ts": 2980,
-    "apps/api/src/sync/event_delivery.integration.test.ts": 12347,
-    "apps/api/src/sync/external_events.integration.test.ts": 3877,
-    "apps/api/src/sync/external_tasks.integration.test.ts": 10809,
-    "apps/api/src/sync/google_access.integration.test.ts": 12391,
-    "apps/api/src/sync/google_access_redaction.integration.test.ts": 13115,
-    "apps/api/src/sync/google_access_removal.integration.test.ts": 12368,
-    "apps/api/src/sync/google_availability.integration.test.ts": 2062,
-    "apps/api/src/sync/google_discovery.integration.test.ts": 12136,
-    "apps/api/src/sync/google_occurrences.integration.test.ts": 2002,
-    "apps/api/src/sync/google_personal_privacy_recovery.integration.test.ts": 19063,
-    "apps/api/src/sync/google_provider_bridge.integration.test.ts": 4212,
-    "apps/api/src/sync/google_reminders.integration.test.ts": 5804,
-    "apps/api/src/sync/google_scope.integration.test.ts": 6434,
-    "apps/api/src/sync/google_shared_create_delivery.integration.test.ts": 13278,
-    "apps/api/src/sync/google_shared_delete_delivery.integration.test.ts": 6139,
-    "apps/api/src/sync/google_shared_delivery.integration.test.ts": 3820,
-    "apps/api/src/sync/google_shared_task_create_delivery.integration.test.ts": 11193,
-    "apps/api/src/sync/google_shared_task_delete_delivery.integration.test.ts": 7557,
-    "apps/api/src/sync/google_shared_task_update_delivery.integration.test.ts": 5067,
-    "apps/api/src/sync/google_task_causal_delivery.integration.test.ts": 18734,
-    "apps/api/src/sync/graph_create_adoption.integration.test.ts": 16481,
-    "apps/api/src/sync/graph_family.integration.test.ts": 11791,
-    "apps/api/src/sync/graph_family_sync.integration.test.ts": 14055,
-    "apps/api/src/sync/graph_occurrences.integration.test.ts": 3351,
-    "apps/api/src/sync/graph_read_coverage.integration.test.ts": 3375,
-    "apps/api/src/sync/graph_series_create_ack.integration.test.ts": 13769,
-    "apps/api/src/sync/graph_series_create_journal.integration.test.ts": 12587,
-    "apps/api/src/sync/graph_series_create_worker.integration.test.ts": 20018,
-    "apps/api/src/sync/graph_series_delete.integration.test.ts": 5400,
-    "apps/api/src/sync/icloud_personal_content.integration.test.ts": 2455,
-    "apps/api/src/sync/microsoft_access.integration.test.ts": 15619,
-    "apps/api/src/sync/microsoft_cancel.integration.test.ts": 3569,
-    "apps/api/src/sync/microsoft_content.integration.test.ts": 1895,
-    "apps/api/src/sync/microsoft_create_delta_reconciliation.integration.test.ts": 1929,
-    "apps/api/src/sync/microsoft_delete.integration.test.ts": 2008,
-    "apps/api/src/sync/microsoft_hydration.integration.test.ts": 12324,
-    "apps/api/src/sync/microsoft_meeting_content.integration.test.ts": 5803,
-    "apps/api/src/sync/microsoft_occurrence_content.integration.test.ts": 19467,
-    "apps/api/src/sync/microsoft_occurrence_time.integration.test.ts": 88519,
-    "apps/api/src/sync/microsoft_organizer.integration.test.ts": 2131,
-    "apps/api/src/sync/microsoft_resource_isolation.integration.test.ts": 3680,
-    "apps/api/src/sync/microsoft_rsvp.integration.test.ts": 6253,
-    "apps/api/src/sync/microsoft_rsvp_occurrence.integration.test.ts": 5631,
-    "apps/api/src/sync/microsoft_rsvp_privacy.integration.test.ts": 2483,
-    "apps/api/src/sync/microsoft_rsvp_series.integration.test.ts": 10729,
-    "apps/api/src/sync/microsoft_series_cancel.integration.test.ts": 9902,
-    "apps/api/src/sync/microsoft_series_content.integration.test.ts": 29259,
-    "apps/api/src/sync/microsoft_series_time.integration.test.ts": 84300,
-    "apps/api/src/sync/microsoft_shared_create_delivery.integration.test.ts": 21853,
-    "apps/api/src/sync/microsoft_shared_delete_delivery.integration.test.ts": 22644,
-    "apps/api/src/sync/microsoft_task_read_completeness.integration.test.ts": 4229,
-    "apps/api/src/sync/oauth.integration.test.ts": 13506,
-    "apps/api/src/sync/operation_admission.integration.test.ts": 3316,
-    "apps/api/src/sync/operation_decoder.integration.test.ts": 3398,
-    "apps/api/src/sync/optional_tasks.integration.test.ts": 12916,
-    "apps/api/src/sync/outlook_global_zones.integration.test.ts": 19628,
-    "apps/api/src/sync/outlook_moves.integration.test.ts": 16060,
-    "apps/api/src/sync/pinned_transport.integration.test.ts": 1939,
-    "apps/api/src/sync/provider_organizer.integration.test.ts": 6276,
-    "apps/api/src/sync/provider_organizer_instance.integration.test.ts": 10354,
-    "apps/api/src/sync/provider_reminder_instance.integration.test.ts": 14912,
-    "apps/api/src/sync/provider_reminder_instance_delivery.integration.test.ts": 16410,
-    "apps/api/src/sync/provider_reminder_instance_public.integration.test.ts": 13854,
-    "apps/api/src/sync/provider_reminder_instance_resolution.integration.test.ts": 12894,
-    "apps/api/src/sync/provider_reminders.integration.test.ts": 1931,
-    "apps/api/src/sync/provider_rsvp.integration.test.ts": 4788,
-    "apps/api/src/sync/provider_rsvp_instance.integration.test.ts": 18756,
-    "apps/api/src/sync/shared_tasks.integration.test.ts": 2010,
-    "apps/api/src/sync/task_ack_delivery.integration.test.ts": 2201,
-    "apps/api/src/sync/task_compatibility_delivery.integration.test.ts": 4952,
-    "apps/api/src/sync/task_delivery.integration.test.ts": 2301,
-    "apps/api/src/task_compatibility.integration.test.ts": 2620,
-    "apps/sync-reference/src/caldav-create-process.integration.test.ts": 74309,
-    "apps/sync-reference/src/caldav-create.integration.test.ts": 2891,
-    "apps/sync-reference/src/caldav-delete-process.integration.test.ts": 37231,
-    "apps/sync-reference/src/caldav-delete.integration.test.ts": 1744,
-    "apps/sync-reference/src/create-process.integration.test.ts": 42280,
-    "apps/sync-reference/src/create.integration.test.ts": 1931,
-    "apps/sync-reference/src/delete-process.integration.test.ts": 30722,
-    "apps/sync-reference/src/delete.integration.test.ts": 2414,
-    "apps/sync-reference/src/graph-create-process.integration.test.ts": 41136,
-    "apps/sync-reference/src/graph-create.integration.test.ts": 1869,
-    "apps/sync-reference/src/graph-delete-process.integration.test.ts": 25495,
-    "apps/sync-reference/src/graph-delete.integration.test.ts": 1723,
-    "apps/sync-reference/src/process.integration.test.ts": 52750,
-    "apps/sync-reference/src/store.integration.test.ts": 2328,
-    "apps/sync-reference/src/task-create-process.integration.test.ts": 8212,
-    "apps/sync-reference/src/task-create.integration.test.ts": 5443,
-    "apps/sync-reference/src/task-delete-process.integration.test.ts": 49929,
-    "apps/sync-reference/src/task-delete.integration.test.ts": 7459,
-    "apps/sync-reference/src/task-intent-process.integration.test.ts": 13908,
-    "apps/sync-reference/src/task-intent.integration.test.ts": 7074,
-    "apps/sync-reference/src/task-update-process.integration.test.ts": 26144,
-    "apps/sync-reference/src/task-update.integration.test.ts": 9032,
-    "packages/db/src/queries/event-delivery-inbox-google-privacy.integration.test.ts": 1111,
-    "packages/db/src/queries/event-outbox.integration.test.ts": 12039,
-    "packages/db/src/queries/event-revision.integration.test.ts": 1141,
-    "packages/db/src/queries/event-scope.integration.test.ts": 934,
-    "packages/db/src/queries/event-time-edit.integration.test.ts": 1161,
-    "packages/db/src/queries/event-time.integration.test.ts": 919,
-    "packages/db/src/queries/operation-admission-missing.integration.test.ts": 1692,
-    "packages/db/src/queries/outbox_causal_retirement.integration.test.ts": 2328,
-    "packages/db/src/queries/source-read.integration.test.ts": 10340,
-    "packages/db/src/queries/task-ack.integration.test.ts": 4004,
-    "packages/db/src/queries/task-causal.integration.test.ts": 5797,
-    "packages/db/src/queries/task-delivery-status.integration.test.ts": 900,
-    "packages/db/src/queries/task-migration.integration.test.ts": 859,
-    "packages/db/src/queries/tasks.integration.test.ts": 1515
+    "apps/api/src/federation.integration.test.ts": 11023,
+    "apps/api/src/federation_gateway.integration.test.ts": 11254.5,
+    "apps/api/src/handlers/calendar_pages.integration.test.ts": 11041.5,
+    "apps/api/src/handlers/connections.integration.test.ts": 11048.5,
+    "apps/api/src/handlers/event_capabilities.integration.test.ts": 5108,
+    "apps/api/src/handlers/event_create_oauth_refresh.integration.test.ts": 56410,
+    "apps/api/src/handlers/event_create_retry.integration.test.ts": 12521.5,
+    "apps/api/src/handlers/event_delivery.integration.test.ts": 2889.5,
+    "apps/api/src/handlers/event_mirror_refresh.integration.test.ts": 6422,
+    "apps/api/src/handlers/event_resolution.integration.test.ts": 15881.5,
+    "apps/api/src/handlers/event_revision.integration.test.ts": 2750.5,
+    "apps/api/src/handlers/event_scope.integration.test.ts": 1886,
+    "apps/api/src/handlers/event_time.integration.test.ts": 2423.5,
+    "apps/api/src/handlers/graph_series_create.integration.test.ts": 13255.5,
+    "apps/api/src/handlers/provider_event_state.integration.test.ts": 2019.5,
+    "apps/api/src/handlers/task_link_capabilities.integration.test.ts": 1817,
+    "apps/api/src/handlers/tasks.integration.test.ts": 2682.5,
+    "apps/api/src/handlers/user_calendar_deletion.integration.test.ts": 2217,
+    "apps/api/src/metrics.integration.test.ts": 1376,
+    "apps/api/src/metrics_outbox.integration.test.ts": 1033,
+    "apps/api/src/middleware/require_client_version.integration.test.ts": 3169.5,
+    "apps/api/src/notification_google_privacy.integration.test.ts": 9797.5,
+    "apps/api/src/reminder_dispatch.integration.test.ts": 1167,
+    "apps/api/src/sync/adapters/provider_create_recovery.integration.test.ts": 12369.5,
+    "apps/api/src/sync/adapters/provider_event_writes.integration.test.ts": 13409,
+    "apps/api/src/sync/bootstrap.integration.test.ts": 12557,
+    "apps/api/src/sync/caldav_access.integration.test.ts": 3343,
+    "apps/api/src/sync/caldav_alarms.integration.test.ts": 10670,
+    "apps/api/src/sync/caldav_discovery_material.integration.test.ts": 3039.5,
+    "apps/api/src/sync/caldav_initial_sync.integration.test.ts": 5949,
+    "apps/api/src/sync/caldav_occurrences.integration.test.ts": 1270,
+    "apps/api/src/sync/caldav_organizer.integration.test.ts": 17752,
+    "apps/api/src/sync/caldav_rsvp.integration.test.ts": 19161,
+    "apps/api/src/sync/caldav_scope.integration.test.ts": 114174.5,
+    "apps/api/src/sync/caldav_shared_create_delivery.integration.test.ts": 21005.5,
+    "apps/api/src/sync/caldav_shared_delete_delivery.integration.test.ts": 18150.5,
+    "apps/api/src/sync/caldav_sync_token.integration.test.ts": 2337,
+    "apps/api/src/sync/event_compatibility_delivery.integration.test.ts": 53212,
+    "apps/api/src/sync/event_delivery.integration.test.ts": 12542.5,
+    "apps/api/src/sync/external_events.integration.test.ts": 3936.5,
+    "apps/api/src/sync/external_tasks.integration.test.ts": 11022,
+    "apps/api/src/sync/google_access.integration.test.ts": 12353.5,
+    "apps/api/src/sync/google_access_redaction.integration.test.ts": 12339,
+    "apps/api/src/sync/google_access_removal.integration.test.ts": 12296,
+    "apps/api/src/sync/google_availability.integration.test.ts": 1773,
+    "apps/api/src/sync/google_discovery.integration.test.ts": 11779.5,
+    "apps/api/src/sync/google_occurrences.integration.test.ts": 2235.5,
+    "apps/api/src/sync/google_personal_privacy_recovery.integration.test.ts": 17664,
+    "apps/api/src/sync/google_provider_bridge.integration.test.ts": 3653.5,
+    "apps/api/src/sync/google_reminders.integration.test.ts": 4871.5,
+    "apps/api/src/sync/google_rsvp_barrier.integration.test.ts": 21036.5,
+    "apps/api/src/sync/google_scope.integration.test.ts": 5578,
+    "apps/api/src/sync/google_shared_create_delivery.integration.test.ts": 13209.5,
+    "apps/api/src/sync/google_shared_delete_delivery.integration.test.ts": 5657,
+    "apps/api/src/sync/google_shared_delivery.integration.test.ts": 3850,
+    "apps/api/src/sync/google_shared_task_create_delivery.integration.test.ts": 9613.5,
+    "apps/api/src/sync/google_shared_task_delete_delivery.integration.test.ts": 7207.5,
+    "apps/api/src/sync/google_shared_task_update_delivery.integration.test.ts": 5753,
+    "apps/api/src/sync/google_task_causal_delivery.integration.test.ts": 14048,
+    "apps/api/src/sync/graph_create_adoption.integration.test.ts": 15707.5,
+    "apps/api/src/sync/graph_family.integration.test.ts": 11887,
+    "apps/api/src/sync/graph_family_sync.integration.test.ts": 14485.5,
+    "apps/api/src/sync/graph_occurrences.integration.test.ts": 2933,
+    "apps/api/src/sync/graph_read_coverage.integration.test.ts": 4565.5,
+    "apps/api/src/sync/graph_series_create_ack.integration.test.ts": 13271.5,
+    "apps/api/src/sync/graph_series_create_journal.integration.test.ts": 12752,
+    "apps/api/src/sync/graph_series_create_worker.integration.test.ts": 19802.5,
+    "apps/api/src/sync/graph_series_delete.integration.test.ts": 5573,
+    "apps/api/src/sync/icloud_oneoff_content.integration.test.ts": 3414,
+    "apps/api/src/sync/icloud_personal_content.integration.test.ts": 2224.5,
+    "apps/api/src/sync/microsoft_access.integration.test.ts": 12483,
+    "apps/api/src/sync/microsoft_cancel.integration.test.ts": 2942.5,
+    "apps/api/src/sync/microsoft_content.integration.test.ts": 2186,
+    "apps/api/src/sync/microsoft_create_delta_reconciliation.integration.test.ts": 2374.5,
+    "apps/api/src/sync/microsoft_delete.integration.test.ts": 2454.5,
+    "apps/api/src/sync/microsoft_hydration.integration.test.ts": 12486.5,
+    "apps/api/src/sync/microsoft_meeting_content.integration.test.ts": 6485.5,
+    "apps/api/src/sync/microsoft_occurrence_content.integration.test.ts": 20593,
+    "apps/api/src/sync/microsoft_occurrence_time.integration.test.ts": 81140.5,
+    "apps/api/src/sync/microsoft_organizer.integration.test.ts": 2725,
+    "apps/api/src/sync/microsoft_resource_isolation.integration.test.ts": 3731,
+    "apps/api/src/sync/microsoft_rsvp.integration.test.ts": 5690,
+    "apps/api/src/sync/microsoft_rsvp_occurrence.integration.test.ts": 6455,
+    "apps/api/src/sync/microsoft_rsvp_privacy.integration.test.ts": 2552,
+    "apps/api/src/sync/microsoft_rsvp_series.integration.test.ts": 12006.5,
+    "apps/api/src/sync/microsoft_series_cancel.integration.test.ts": 7886,
+    "apps/api/src/sync/microsoft_series_content.integration.test.ts": 26994.5,
+    "apps/api/src/sync/microsoft_series_time.integration.test.ts": 87119,
+    "apps/api/src/sync/microsoft_shared_create_delivery.integration.test.ts": 20358,
+    "apps/api/src/sync/microsoft_shared_delete_delivery.integration.test.ts": 20029.5,
+    "apps/api/src/sync/microsoft_task_read_completeness.integration.test.ts": 3715.5,
+    "apps/api/src/sync/oauth.integration.test.ts": 11939,
+    "apps/api/src/sync/operation_admission.integration.test.ts": 3961.5,
+    "apps/api/src/sync/operation_decoder.integration.test.ts": 3303,
+    "apps/api/src/sync/optional_tasks.integration.test.ts": 13457,
+    "apps/api/src/sync/outlook_global_zones.integration.test.ts": 19998,
+    "apps/api/src/sync/outlook_moves.integration.test.ts": 22356,
+    "apps/api/src/sync/pinned_transport.integration.test.ts": 2011,
+    "apps/api/src/sync/provider_budget.integration.test.ts": 7394.5,
+    "apps/api/src/sync/provider_organizer.integration.test.ts": 5096.5,
+    "apps/api/src/sync/provider_organizer_instance.integration.test.ts": 9429,
+    "apps/api/src/sync/provider_reminder_instance.integration.test.ts": 14860,
+    "apps/api/src/sync/provider_reminder_instance_delivery.integration.test.ts": 15642.5,
+    "apps/api/src/sync/provider_reminder_instance_public.integration.test.ts": 13644,
+    "apps/api/src/sync/provider_reminder_instance_resolution.integration.test.ts": 13324.5,
+    "apps/api/src/sync/provider_reminders.integration.test.ts": 1914,
+    "apps/api/src/sync/provider_rsvp.integration.test.ts": 4712.5,
+    "apps/api/src/sync/provider_rsvp_instance.integration.test.ts": 18689.5,
+    "apps/api/src/sync/shared_tasks.integration.test.ts": 2461.5,
+    "apps/api/src/sync/task_ack_delivery.integration.test.ts": 2297.5,
+    "apps/api/src/sync/task_compatibility_delivery.integration.test.ts": 4905.5,
+    "apps/api/src/sync/task_delivery.integration.test.ts": 2088,
+    "apps/api/src/task_compatibility.integration.test.ts": 2148.5,
+    "apps/sync-reference/src/caldav-create-process.integration.test.ts": 77347,
+    "apps/sync-reference/src/caldav-create.integration.test.ts": 2276,
+    "apps/sync-reference/src/caldav-delete-process.integration.test.ts": 46073.5,
+    "apps/sync-reference/src/caldav-delete.integration.test.ts": 1905,
+    "apps/sync-reference/src/create-process.integration.test.ts": 39994.5,
+    "apps/sync-reference/src/create.integration.test.ts": 1738.5,
+    "apps/sync-reference/src/cross-account.integration.test.ts": 1110.5,
+    "apps/sync-reference/src/delete-process.integration.test.ts": 28908,
+    "apps/sync-reference/src/delete.integration.test.ts": 1987.5,
+    "apps/sync-reference/src/graph-create-process.integration.test.ts": 47742,
+    "apps/sync-reference/src/graph-create.integration.test.ts": 2036,
+    "apps/sync-reference/src/graph-delete-process.integration.test.ts": 28282,
+    "apps/sync-reference/src/graph-delete.integration.test.ts": 1552.5,
+    "apps/sync-reference/src/process.integration.test.ts": 48002,
+    "apps/sync-reference/src/store.integration.test.ts": 2202.5,
+    "apps/sync-reference/src/task-create-process.integration.test.ts": 9352.5,
+    "apps/sync-reference/src/task-create.integration.test.ts": 5210,
+    "apps/sync-reference/src/task-delete-process.integration.test.ts": 42667,
+    "apps/sync-reference/src/task-delete.integration.test.ts": 7433,
+    "apps/sync-reference/src/task-intent-process.integration.test.ts": 16649,
+    "apps/sync-reference/src/task-intent.integration.test.ts": 7641.5,
+    "apps/sync-reference/src/task-update-process.integration.test.ts": 25743,
+    "apps/sync-reference/src/task-update.integration.test.ts": 9433.5,
+    "packages/db/src/queries/event-delivery-inbox-google-privacy.integration.test.ts": 1018,
+    "packages/db/src/queries/event-outbox.integration.test.ts": 12047.5,
+    "packages/db/src/queries/event-revision.integration.test.ts": 1440,
+    "packages/db/src/queries/event-scope.integration.test.ts": 1171,
+    "packages/db/src/queries/event-time-edit.integration.test.ts": 1068.5,
+    "packages/db/src/queries/event-time.integration.test.ts": 1121.5,
+    "packages/db/src/queries/operation-admission-missing.integration.test.ts": 1774.5,
+    "packages/db/src/queries/outbox_causal_retirement.integration.test.ts": 2086.5,
+    "packages/db/src/queries/read-work-transaction.integration.test.ts": 1244,
+    "packages/db/src/queries/settings.integration.test.ts": 1255,
+    "packages/db/src/queries/source-read.integration.test.ts": 10240,
+    "packages/db/src/queries/sync-scheduling.integration.test.ts": 7504.5,
+    "packages/db/src/queries/task-ack.integration.test.ts": 3837.5,
+    "packages/db/src/queries/task-causal.integration.test.ts": 5586.5,
+    "packages/db/src/queries/task-delivery-status.integration.test.ts": 1003,
+    "packages/db/src/queries/task-migration.integration.test.ts": 933,
+    "packages/db/src/queries/tasks.integration.test.ts": 1554.5
   }
 }

@@ -25,7 +25,8 @@ import { Input } from "~/components/ui/input";
 const loginSearchSchema = z.object({
   // Better Auth sends the browser back here when a provider round trip fails —
   // the person is on the login page again and deserves to know why.
-  error: z.string().optional().catch(undefined),
+  // Better Auth appends its own `error` to our `?error=oauth`, so it may repeat.
+  error: z.union([z.string(), z.array(z.string())]).optional().catch(undefined),
   redirect: z.string().optional().catch(undefined),
 });
 
@@ -74,6 +75,10 @@ function errorMessage(error: { message?: string } | null | undefined) {
 // this one case can be explained instead of read as a wrong passphrase.
 const EMAIL_NOT_VERIFIED = "EMAIL_NOT_VERIFIED";
 
+// A provider sign-in refused by the server's sign-up rule comes back carrying the
+// API's message with spaces turned into underscores (Better Auth's convention).
+const SIGN_UP_REFUSED_OAUTH = "This_server_does_not_accept_new_accounts.";
+
 function LoginRoute() {
   const session = authClient.useSession();
   const { error, redirect } = Route.useSearch();
@@ -91,7 +96,11 @@ function LoginRoute() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [message, setMessage] = useState(
-    error ? "That sign-in did not come back. Try again, or use your passphrase." : "",
+    !error
+      ? ""
+      : [error].flat().includes(SIGN_UP_REFUSED_OAUTH)
+        ? "This server does not accept new accounts."
+        : "That sign-in did not come back. Try again, or use your passphrase.",
   );
   const [submitting, setSubmitting] = useState(false);
   const [resetSent, setResetSent] = useState(false);
@@ -299,12 +308,16 @@ function LoginRoute() {
         ) : undefined
       }
       footer={
-        <AuthSwitch
-          action={signingUp ? "Sign in" : "Create one"}
-          onAction={switchMode}
-        >
-          {signingUp ? "Already have an account?" : "New to this server?"}
-        </AuthSwitch>
+        // A closed server has no account to create; offering the form would
+        // only end in a refusal. The way back from sign-up stays.
+        capabilities.data?.signUp === false && !signingUp ? undefined : (
+          <AuthSwitch
+            action={signingUp ? "Sign in" : "Create one"}
+            onAction={switchMode}
+          >
+            {signingUp ? "Already have an account?" : "New to this server?"}
+          </AuthSwitch>
+        )
       }
       title={signingUp ? "Create your account" : "Sign in"}
       utility={<ThemeToggle />}
