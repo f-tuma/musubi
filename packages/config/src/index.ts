@@ -267,6 +267,9 @@ type SecurityConfig = {
   // open registration, where an unconfirmed address is a stranger's typo at
   // best and someone else's inbox at worst.
   requireEmailVerification: boolean;
+  // null: anyone may create an account. A list: only these addresses and
+  // "@domain" entries may; empty means nobody. See parseSignUpAllowlist.
+  signUpAllowlist: string[] | null;
   // Federation gateway SSRF guard: private/loopback targets are refused by
   // default. Self-hosters federating two servers on a LAN (or one box) must
   // opt in explicitly. Auto-enabled only for the two-server dev setup.
@@ -428,10 +431,50 @@ function parseRequireEmailVerification() {
   return required;
 }
 
+/** DISABLE_SIGNUPS closes registration; SIGNUP_ALLOWED_EMAILS lists the
+ * addresses ("a@b.cz") and domains ("@b.cz") still let in. Typos fail boot:
+ * a mistyped flag would otherwise leave a server open that its operator closed. */
+export function parseSignUpAllowlist(
+  disabled: string | undefined,
+  allowed: string | undefined,
+): string[] | null {
+  if (disabled && disabled !== "true" && disabled !== "false") {
+    throw new Error("Invalid DISABLE_SIGNUPS. Expected true or false.");
+  }
+  const entries = (allowed ?? "")
+    .split(",")
+    .map((entry) => entry.trim().toLowerCase())
+    .filter(Boolean);
+  for (const entry of entries) {
+    if (!/^[^\s@]*@[^\s@]+$/.test(entry)) {
+      throw new Error(`Invalid SIGNUP_ALLOWED_EMAILS entry "${entry}". Expected name@domain or @domain.`);
+    }
+  }
+  if (disabled !== "true") {
+    if (entries.length) {
+      throw new Error("SIGNUP_ALLOWED_EMAILS only applies with DISABLE_SIGNUPS=true.");
+    }
+    return null;
+  }
+  return entries;
+}
+
+export function isSignUpAllowed(allowlist: string[] | null, email: string): boolean {
+  if (allowlist === null) return true;
+  const address = email.trim().toLowerCase();
+  return allowlist.some((entry) =>
+    entry.startsWith("@") ? address.endsWith(entry) : address === entry,
+  );
+}
+
 const securityConfig: SecurityConfig = {
   devAuthCookiePrefix: parseDevAuthCookiePrefix(environment, process.env.DEV_AUTH_COOKIE_PREFIX),
   caldavEncKey: process.env.CALDAV_ENC_KEY ?? "", // validated at use in the crypto helper
   requireEmailVerification: parseRequireEmailVerification(),
+  signUpAllowlist: parseSignUpAllowlist(
+    process.env.DISABLE_SIGNUPS,
+    process.env.SIGNUP_ALLOWED_EMAILS,
+  ),
   federationAllowPrivateHosts:
     process.env.FEDERATION_ALLOW_PRIVATE_HOSTS === "true" ||
     environment === "dev",

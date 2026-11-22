@@ -1,6 +1,6 @@
 import { colors, fonts, styles } from "@/constants/theme";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { View, Text, Linking, KeyboardAvoidingView, ScrollView } from "react-native";
 import InputModal from "@/components/TextInputModal";
 import { Btn } from "@/components/ui/Btn";
@@ -28,6 +28,15 @@ export default function Welcome() {
 
   const [inputModalVisible, setInputModalVisible] = useState(false);
   const router = useRouter();
+  // A closed server says signUp:false; older servers omit it and stay open.
+  const [signUp, setSignUp] = useState(true);
+  useEffect(() => {
+    if (!apiUrl) return;
+    fetchWithTimeout(`${apiUrl}/api/v1/server`)
+      .then(r => r.json())
+      .then(({ signUp }) => setSignUp(signUp !== false))
+      .catch(() => setSignUp(true));
+  }, [apiUrl]);
 
   const testApiUrl = async (value: string) => {
     let result;
@@ -74,10 +83,12 @@ export default function Welcome() {
           </Text>
         </View>
         <View style={styles.modalButtonsColumn}>
-          <Btn
-            label="Create account"
-            onPress={() => router.push("/(auth)/sign-up")}
-          />
+          {signUp ? (
+            <Btn
+              label="Create account"
+              onPress={() => router.push("/(auth)/sign-up")}
+            />
+          ) : null}
           <Btn
             label="Login"
             variant="secondary"

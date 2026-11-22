@@ -2308,6 +2308,8 @@ for (const theme of ["light", "dark"] as const) {
 			await setTestTheme(page, theme);
 			await page.setViewportSize({ width, height });
 			await mockAuthenticatedReads(page, multiDayEvents);
+			// Keep the real "today" out of November so the run does not depend on the date.
+			await page.clock.setFixedTime(new Date("2026-09-01T10:00:00"));
 			await page.goto(`/app/p/${DEFAULT_PAGE_ID}/month?date=2026-11-15`);
 			const month = page.getByRole("grid", { name: "November 2026 calendar" });
 			await expect(month).toBeVisible();

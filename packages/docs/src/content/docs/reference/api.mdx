@@ -111,7 +111,7 @@ regression self-check also verifies that neither protected read runs.
 
 | Method and path | Auth | Response |
 | --- | ---: | --- |
-| `GET /api/v1/server` | Public | `{ version, minClientVersion, socials, socialsWeb, syncProviders, googleAvailability, email, emailVerificationRequired, pushPublicKey, sentry }`; `sentry` is `{ dsn, environment, tracesSampleRate }` for browser error tracking, or `null` |
+| `GET /api/v1/server` | Public | `{ version, minClientVersion, socials, socialsWeb, syncProviders, googleAvailability, email, emailVerificationRequired, signUp, pushPublicKey, sentry }`; `sentry` is `{ dsn, environment, tracesSampleRate }` for browser error tracking, or `null` |
 | `GET /api/v1/server/ok` | Public | `{ ok: true, version }` |
 | `GET /api/stream` | Required | Long-lived `text/event-stream` |
 
