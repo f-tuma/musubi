@@ -253,9 +253,10 @@ Entries are exact addresses or `@domain` for everyone at that domain (not its
 subdomains). The rule covers every way an account is created — passphrase,
 emailed code, Google, Microsoft and Apple — and leaves existing accounts alone.
 To invite someone, add their address and restart the API; they then register
-normally. With an empty list nobody can register and the web client hides
-"Create one". Guests from other Musubi servers still join shared calendars
-through their invite link, because they keep their account at home.
+normally. With an empty list nobody can register, and the web client and the
+phone app (from its next release) hide "Create account". Guests from other Musubi
+servers still join shared calendars through their invite link: they keep their
+account at home and cannot sign in here directly.
 
 <Aside type="caution" title="An address on the list is not proof of owning it">
 Without `REQUIRE_EMAIL_VERIFICATION=true`, whoever types a listed address first
