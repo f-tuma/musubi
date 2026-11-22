@@ -2,12 +2,15 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { lstat, mkdir, mkdtemp, readFile, readdir, realpath, rename, rm, symlink, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
+import { spawn } from "node:child_process";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { GENERATED_MANAGER_PATHS, canonicalNewPath, execute, inventoryPackages, parseArguments, planDeployedManifest, planGeneratedManagerMetadata,
   requiredCases, requireArchivedPackageManager, sha256, stripReferenceTestSupport } from "./sync-alpha-common.mjs";
 import { validateConformance } from "./verify-sync-alpha.mjs";
+import * as common from "./sync-alpha-common.mjs";
+import * as verifier from "./verify-sync-alpha.mjs";
 
 const mode = "reference-db", root = "/owned/candidate", manifestSha256 = "a".repeat(64), source = { commit: "b".repeat(40), tree: "c".repeat(40) };
 const expectedCaseIDs = ["db/reference/paired"], binding = { mode, root, manifestSha256, manifest: { source }, expectedCaseIDs };
@@ -214,4 +217,114 @@ test("full conformance receipt requires exact candidate, required cases and own 
     value => { value.inventory.requiredCaseIDs = ["db/reference/other"]; value.inventory.selectedCaseIDs = ["db/reference/other"]; value.results[0].id = "db/reference/other"; },
     value => { value.totals.passed = 2; }, value => { value.liveProvider = true; }];
   for (const mutate of mutations) { const value = receipt(); mutate(value); assert.throws(() => validateConformance(value, binding)); }
+});
+
+test("owned execution failures expose only a fixed failure code", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "sync-alpha-failure-code-test-")), env = { PATH: process.env.PATH ?? "" };
+  const leak = "process.stdout.write('STDOUT-SECRET'); process.stderr.write('STDERR-SECRET');";
+  try {
+    for (const [code, script, options] of [["child-failed", `${leak} process.exit(3);`, {}], ["timeout", `${leak} setInterval(() => {}, 1000);`, { timeoutMs: 300 }],
+      ["output-overflow", `process.stdout.write("x".repeat(4096)); setInterval(() => {}, 1000);`, { maximumOutput: 64 }]]) {
+      await assert.rejects(execute(`failure-${code}`, process.execPath, ["-e", script], { cwd: directory, env, ...options }), error => {
+        assert.equal(error.code, code); assert.equal(error.id, `failure-${code}`); assert.ok(common.EXECUTE_FAILURE_CODES.includes(error.code));
+        assert.deepEqual(Object.keys(error).sort(), ["code", "id"]); assert.doesNotMatch(`${error.message} ${JSON.stringify(error)}`, /SECRET|xxxx/);
+        return true;
+      });
+    }
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});
+const RETENTION_IDS = ["db/reference/paired", "db/reference/second"], SECRET_URL = "postgresql://owner:hunter2@127.0.0.1:1/reference";
+const RETENTION_STUB = `import { writeFileSync } from "node:fs";
+const args = process.argv.slice(2), at = name => args[args.indexOf(name) + 1], fixture = JSON.parse(process.env.STUB_FIXTURE), behavior = fixture.behavior;
+const url = process.env.REFERENCE_DATABASE_URL ?? "postgresql://absent", ids = fixture.ids;
+const result = id => ({ id, status: behavior === "passed" ? "passed" : "failed", durationMs: 12, exitCode: behavior === "passed" ? 0 : null, skipped: 0, todo: 0,
+  ...(behavior === "passed" ? {} : { errorCode: "child-exit-failed", terminationReason: "timeout", stack: "Error at " + url }),
+  cleanup: { required: true, completed: true, ...(behavior === "passed" ? {} : { leaked: url }) }, ...(behavior === "passed" ? {} : { cleanupEvidence: { url, outer: "c10_secret_db" } }) });
+const report = { schemaVersion: 1, kind: "sync-conformance-report", mode: at("--mode"), source: { head: fixture.head, tree: fixture.tree },
+  candidate: { root: at("--candidate-root"), manifestSha256: fixture.digest, ...(behavior === "passed" ? {} : { url }) },
+  inventory: { requiredCaseIDs: ids, selectedCaseIDs: ids }, results: ids.map(result),
+  totals: { required: ids.length, selected: ids.length, passed: behavior === "passed" ? ids.length : 0, failed: behavior === "passed" ? 0 : ids.length, skipped: 0, todo: 0 },
+  status: behavior === "passed" ? "passed" : "failed", partial: false, installedRuntime: false, liveProvider: false, deployed: false, ...(behavior === "passed" ? {} : { debug: url }) };
+if (behavior === "foreign-case") report.results[0].id = "db/reference/other";
+if (behavior === "bad-status") report.results[0].status = "maybe";
+if (behavior === "bad-duration") report.results[0].durationMs = "12; " + url;
+if (behavior === "wrong-source") report.source.head = "d".repeat(40);
+if (behavior === "wrong-digest") report.candidate.manifestSha256 = "e".repeat(64);
+if (behavior === "runner-error") { for (const key of ["source", "candidate", "inventory", "results", "totals", "mode"]) delete report[key]; report.partial = true; report.errorCode = "conformance-unavailable"; }
+if (behavior === "unknown-code") report.results[1].errorCode = "free text " + url;
+const bytes = behavior === "garbage" ? "not json " + url : behavior === "oversize" ? JSON.stringify({ ...report, padding: "x".repeat(3_000_000) }) : JSON.stringify(report);
+if (behavior !== "no-report") writeFileSync(at("--report"), bytes, { flag: "wx", mode: 0o600 });
+process.stdout.write("STDOUT-SECRET " + url + "\\n"); process.stderr.write("STDERR-SECRET " + url + "\\n");
+process.exit(behavior === "passed" ? 0 : 1);
+`;
+async function retentionFixture() {
+  const directory = await realpath(await mkdtemp(join(tmpdir(), "sync-alpha-retention-test-"))), root = join(directory, "candidate"), conformance = join(root, "conformance");
+  await mkdir(join(conformance, "scripts"), { recursive: true }); await mkdir(join(conformance, "apps/sync-reference/conformance"), { recursive: true });
+  const corpus = JSON.stringify({ schemaVersion: 1, entries: RETENTION_IDS.map(id => ({ id, kind: "module", mode, required: true })), modes: { [mode]: { requiredCaseIDs: RETENTION_IDS } } });
+  await writeFile(join(conformance, "apps/sync-reference/conformance/manifest.v1.json"), corpus);
+  await writeFile(join(conformance, "scripts/sync-conformance.mjs"), RETENTION_STUB);
+  const manifest = { source, conformance: { manifest: "apps/sync-reference/conformance/manifest.v1.json", manifestSha256: sha256(corpus) } };
+  return { directory, root, conformance, manifest, conformanceReportPath: join(directory, "sync-alpha-reference-db.json.conformance.json") };
+}
+async function runRetention(fixture, behavior, { work } = {}) {
+  const scratch = work ?? await mkdtemp(join(fixture.directory, "work-")), saved = {};
+  for (const [key, value] of Object.entries({ REFERENCE_DATABASE_URL: SECRET_URL, REFERENCE_CREDENTIAL_KEY: "6".repeat(64), ENVIRONMENT: "test" })) { saved[key] = process.env[key]; process.env[key] = value; }
+  try {
+    return await verifier.runInstalledConformance({ mode, root: fixture.root, conformance: fixture.conformance, work: scratch, manifest: fixture.manifest, manifestSha256,
+      conformanceReportPath: fixture.conformanceReportPath,
+      env: { PATH: process.env.PATH ?? "", STUB_FIXTURE: JSON.stringify({ behavior, ids: RETENTION_IDS, head: source.commit, tree: source.tree, digest: manifestSha256 }) } });
+  } finally { for (const [key, value] of Object.entries(saved)) { if (value === undefined) delete process.env[key]; else process.env[key] = value; } }
+}
+const retainedHeader = { schemaVersion: 1, kind: "sync-alpha-conformance-failure", status: "failed", mode, phase: "installed-conformance-reference-db", code: "child-failed",
+  source: { head: source.commit, tree: source.tree }, candidate: { manifestSha256 } };
+test("installed conformance failure retains a strictly sanitized receipt and rethrows the original failure", async () => {
+  const fixture = await retentionFixture();
+  try {
+    const expectFailure = error => { assert.equal(error.code, "child-failed"); assert.equal(error.id, "installed-conformance-reference-db"); assert.doesNotMatch(error.message, /SECRET|hunter2/); return true; };
+    const read = async () => { const text = await readFile(fixture.conformanceReportPath, "utf8"); assert.doesNotMatch(text, /hunter2|postgresql|SECRET|c10_secret|candidate"?:\s*\{\s*"root|stack|debug|leaked|cleanupEvidence|free text/);
+      assert.equal((await lstat(fixture.conformanceReportPath)).mode & 0o777, 0o600); assert.throws(() => validateConformance(JSON.parse(text), { ...binding, root: fixture.root, expectedCaseIDs: RETENTION_IDS }));
+      await rm(fixture.conformanceReportPath); return JSON.parse(text); };
+    await assert.rejects(runRetention(fixture, "malicious-valid"), expectFailure);
+    assert.deepEqual(await read(), { ...retainedHeader, receipt: "retained", report: { status: "failed", partial: false, errorCode: null,
+      totals: { required: 2, recorded: 2, passed: 0, failed: 2 }, results: RETENTION_IDS.map(id => ({ id, status: "failed", durationMs: 12, exitCode: null, skipped: 0, todo: 0,
+        errorCode: "child-exit-failed", terminationReason: "timeout", cleanup: { required: true, completed: true } })) } });
+    await assert.rejects(runRetention(fixture, "runner-error"), expectFailure);
+    assert.deepEqual(await read(), { ...retainedHeader, receipt: "retained", report: { status: "failed", partial: true, errorCode: "conformance-unavailable",
+      totals: { required: 2, recorded: 0, passed: 0, failed: 0 }, results: [] } });
+    for (const [behavior, receipt] of [["foreign-case", "invalid"], ["bad-status", "invalid"], ["bad-duration", "invalid"], ["wrong-source", "invalid"], ["wrong-digest", "invalid"],
+      ["unknown-code", "invalid"], ["garbage", "invalid"], ["oversize", "oversize"], ["no-report", "missing"]]) {
+      await assert.rejects(runRetention(fixture, behavior), expectFailure, behavior);
+      assert.deepEqual(await read(), { ...retainedHeader, receipt, report: null }, behavior);
+    }
+    // A failed diagnostic write never masks the original installed-conformance failure.
+    await writeFile(fixture.conformanceReportPath, "existing\n");
+    await assert.rejects(runRetention(fixture, "malicious-valid"), expectFailure);
+    assert.equal(await readFile(fixture.conformanceReportPath, "utf8"), "existing\n"); await rm(fixture.conformanceReportPath);
+    // The passing acceptance path and its full receipt are unchanged.
+    const passed = await runRetention(fixture, "passed");
+    assert.equal(passed.status, "passed"); assert.equal(passed.required, 2); assert.equal(passed.cleanupCompleted, true);
+    assert.equal(JSON.parse(await readFile(fixture.conformanceReportPath, "utf8")).kind, "sync-conformance-report");
+  } finally { await rm(fixture.directory, { recursive: true, force: true }); }
+});
+test("verifier failure line carries only allowlisted phase and code", async () => {
+  const secret = new Error(`database ${SECRET_URL} refused`);
+  assert.deepEqual(verifier.verificationErrorRecord(secret), { schemaVersion: 1, kind: "sync-alpha-verification-error", status: "failed", phase: "unclassified", code: "unclassified" });
+  const failure = Object.assign(new Error("installed-conformance-reference-db: required process did not complete successfully."), { id: "installed-conformance-reference-db", code: "timeout" });
+  assert.deepEqual(verifier.verificationErrorRecord(failure), { schemaVersion: 1, kind: "sync-alpha-verification-error", status: "failed", phase: "installed-conformance-reference-db", code: "timeout" });
+  for (const forged of [{ id: SECRET_URL, code: "timeout" }, { id: "installed-conformance-reference-db", code: SECRET_URL }, { id: "installed-conformance-reference-db" }]) {
+    const record = verifier.verificationErrorRecord(Object.assign(new Error("x"), forged)); assert.doesNotMatch(JSON.stringify(record), /hunter2/);
+    assert.ok(record.phase === "unclassified" || record.code === "unclassified");
+  }
+  const cli = await new Promise(done => { const child = spawn(process.execPath, [new URL("./verify-sync-alpha.mjs", import.meta.url).pathname, "--mode", SECRET_URL], { stdio: ["ignore", "pipe", "pipe"] });
+    let stdout = "", stderr = ""; child.stdout.on("data", part => { stdout += part; }); child.stderr.on("data", part => { stderr += part; }); child.once("close", code => done({ code, stdout, stderr })); });
+  assert.equal(cli.code, 1); assert.equal(cli.stdout, "");
+  assert.deepEqual(JSON.parse(cli.stderr), { schemaVersion: 1, kind: "sync-alpha-verification-error", status: "failed", phase: "unclassified", code: "unclassified" });
+});
+test("failure receipt allowlists cover every installed runner code and termination reason", async () => {
+  const runner = await readFile(new URL("./sync-conformance.mjs", import.meta.url), "utf8"), bootstrap = "db-bootstrap-allocation-failed";
+  const codes = new Set([...runner.matchAll(/(?:fail|ConformanceError)\("([a-z][a-z-]*)"\)|errorCode(?: \?\?=|:) (?:[^,"]*? : )?"([a-z][a-z-]*)"/g)].map(match => match[1] ?? match[2]));
+  assert.ok(codes.size >= 20 && codes.has("child-exit-failed") && codes.has("cleanup-incomplete"));
+  assert.deepEqual([...codes, bootstrap].sort(), [...verifier.CONFORMANCE_ERROR_CODES].sort());
+  const reasons = /TERMINATION_REASONS = Object\.freeze\((\[[^\]]*\])\)/.exec(runner);
+  assert.deepEqual(JSON.parse(reasons[1]), [...common.TERMINATION_REASONS]);
 });

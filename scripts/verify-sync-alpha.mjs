@@ -2,8 +2,8 @@ import { lstat, mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } fro
 import { tmpdir } from "node:os";
 import { isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { GENERATED_MANAGER_PATHS, OWNED_NAMES, PINS, WORKSPACES, absent, canonicalNewPath, cleanEnvironment, execute, files, inside, loadTool, parseArguments,
-  readJson, requiredCases, requireThat, sha256, writeJson } from "./sync-alpha-common.mjs";
+import { EXECUTE_FAILURE_CODES, GENERATED_MANAGER_PATHS, OWNED_NAMES, PINS, TERMINATION_REASONS, WORKSPACES, absent, canonicalNewPath, cleanEnvironment, execute, files,
+  inside, loadTool, parseArguments, readJson, requiredCases, requireThat, sha256, writeJson } from "./sync-alpha-common.mjs";
 
 const TOOL_ROOT = fileURLToPath(new URL("../", import.meta.url));
 export function validateConformance(report, { mode, manifest, manifestSha256, root, expectedCaseIDs }) {
@@ -27,6 +27,105 @@ export function validateConformance(report, { mode, manifest, manifestSha256, ro
   requireThat(report.totals?.required === required.length && report.totals.selected === required.length && report.totals.passed === required.length &&
     report.totals.failed === 0 && report.totals.skipped === 0 && report.totals.todo === 0, "Conformance totals do not reconcile.");
   return { required: required.length, passed: required.length, cleanupCompleted: true };
+}
+// Failure diagnostics keep only fixed codes and values bound to this installed
+// candidate. They never carry child output, paths, environment or DB names.
+const VERIFY_PHASES = Object.freeze(["external-consumer-import", "external-consumer-typecheck", "installed-cli-no-ambient-config",
+  "installed-conformance-deterministic", "installed-conformance-reference-db"]);
+export const CONFORMANCE_ERROR_CODES = Object.freeze(["candidate-identity-mismatch", "child-exit-failed", "cleanup-incomplete", "conformance-unavailable",
+  "corpus-inventory-mismatch", "db-bootstrap-allocation-failed", "empty-mode", "entry-unavailable", "incomplete-child-report", "invalid-arguments",
+  "invalid-child-report", "invalid-file-path", "invalid-manifest", "invalid-profile-inventory", "missing-assertion-contract", "missing-required-assertion",
+  "missing-required-file", "missing-skipped-child-case", "missing-supplemental-proof", "mode-inventory-mismatch", "portable-host-import", "runner-interrupted",
+  "source-changed-during-run", "source-symlink-escape", "unclean-source-identity", "unknown-scenario"]);
+const FAILURE_RECEIPT_MAX_BYTES = 2_000_000;
+const plain = value => value !== null && typeof value === "object" && !Array.isArray(value);
+export function verificationErrorRecord(error) {
+  const phase = VERIFY_PHASES.includes(error?.id) ? error.id : "unclassified";
+  const code = phase !== "unclassified" && EXECUTE_FAILURE_CODES.includes(error?.code) ? error.code : "unclassified";
+  return { schemaVersion: 1, kind: "sync-alpha-verification-error", status: "failed", phase, code };
+}
+/** Rebuild a failed child receipt from validated values only; throws on anything unexpected. */
+export function sanitizeConformanceFailure(report, { mode, manifest, manifestSha256, expectedCaseIDs }) {
+  const expected = new Set(expectedCaseIDs), count = value => Number.isSafeInteger(value) && value >= 0 && value <= 1_000_000;
+  requireThat(plain(report) && report.schemaVersion === 1 && report.kind === "sync-conformance-report" && ["passed", "failed"].includes(report.status) &&
+    typeof report.partial === "boolean" && (report.errorCode === undefined || CONFORMANCE_ERROR_CODES.includes(report.errorCode)), "Invalid failure receipt.");
+  const totals = results => ({ required: expected.size, recorded: results.length, passed: results.filter(r => r.status === "passed").length,
+    failed: results.filter(r => r.status === "failed").length });
+  if (report.results === undefined) {
+    requireThat(report.status === "failed" && report.partial === true && report.errorCode !== undefined, "Invalid runner failure receipt.");
+    return { status: "failed", partial: true, errorCode: report.errorCode, totals: totals([]), results: [] };
+  }
+  requireThat(report.mode === mode && plain(report.source) && report.source.head === manifest.source.commit && report.source.tree === manifest.source.tree &&
+    plain(report.candidate) && report.candidate.manifestSha256 === manifestSha256, "Failure receipt binding differs.");
+  const required = report.inventory?.requiredCaseIDs;
+  requireThat(Array.isArray(required) && required.length === expected.size && required.every(id => expected.has(id)) && new Set(required).size === expected.size,
+    "Failure receipt inventory differs.");
+  requireThat(Array.isArray(report.results) && report.results.length <= expected.size, "Failure receipt result inventory differs.");
+  const seen = new Set(), results = report.results.map(result => {
+    requireThat(plain(result) && typeof result.id === "string" && expected.has(result.id) && !seen.has(result.id) && ["passed", "failed"].includes(result.status) &&
+      Number.isFinite(result.durationMs) && result.durationMs >= 0 && result.durationMs <= 86_400_000 &&
+      (result.exitCode === null || (Number.isSafeInteger(result.exitCode) && result.exitCode >= 0 && result.exitCode <= 255)) && count(result.skipped) && count(result.todo) &&
+      (result.errorCode === undefined || CONFORMANCE_ERROR_CODES.includes(result.errorCode)) &&
+      (result.terminationReason === undefined || TERMINATION_REASONS.includes(result.terminationReason)) &&
+      (result.cleanup === null || (plain(result.cleanup) && typeof result.cleanup.required === "boolean" && typeof result.cleanup.completed === "boolean")),
+    "Invalid failure receipt case.");
+    seen.add(result.id);
+    return { id: result.id, status: result.status, durationMs: result.durationMs, exitCode: result.exitCode, skipped: result.skipped, todo: result.todo,
+      ...(result.errorCode === undefined ? {} : { errorCode: result.errorCode }), ...(result.terminationReason === undefined ? {} : { terminationReason: result.terminationReason }),
+      cleanup: result.cleanup === null ? null : { required: result.cleanup.required, completed: result.cleanup.completed } };
+  });
+  return { status: report.status, partial: report.partial, errorCode: report.errorCode ?? null, totals: totals(results), results };
+}
+async function installedCaseIDs(conformance, manifest, mode) {
+  requireThat(manifest.conformance?.manifest === "apps/sync-reference/conformance/manifest.v1.json", "Unsupported installed conformance path.");
+  const corpusPath = join(conformance, manifest.conformance.manifest);
+  requireThat(sha256(await readFile(corpusPath)) === manifest.conformance.manifestSha256, "Installed conformance manifest differs.");
+  return requiredCases(await readJson(corpusPath), mode);
+}
+/** Best effort: persist a sanitized failure record; never throws and never replaces the original failure. */
+async function retainConformanceFailure({ receipt, path, mode, conformance, manifest, manifestSha256, failure }) {
+  try {
+    const record = { schemaVersion: 1, kind: "sync-alpha-conformance-failure", status: "failed", mode, phase: `installed-conformance-${mode}`,
+      code: EXECUTE_FAILURE_CODES.includes(failure?.code) ? failure.code : "unclassified", source: { head: manifest.source.commit, tree: manifest.source.tree },
+      candidate: { manifestSha256 }, receipt: "missing", report: null };
+    let info; try { info = await lstat(receipt); } catch { info = undefined; }
+    if (info) {
+      if (info.isFile() && info.size > FAILURE_RECEIPT_MAX_BYTES) record.receipt = "oversize";
+      else {
+        try {
+          requireThat(info.isFile(), "Failure receipt is not a regular file.");
+          const bytes = await readFile(receipt); requireThat(bytes.length <= FAILURE_RECEIPT_MAX_BYTES, "Failure receipt exceeds its bound.");
+          record.report = sanitizeConformanceFailure(JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)),
+            { mode, manifest, manifestSha256, expectedCaseIDs: await installedCaseIDs(conformance, manifest, mode) });
+          record.receipt = "retained";
+        } catch { record.receipt = "invalid"; record.report = null; }
+      }
+    }
+    await writeFile(path, `${JSON.stringify(record, null, 2)}\n`, { flag: "wx", mode: 0o600 });
+  } catch { /* Diagnostics are optional evidence; the original failure is rethrown by the caller. */ }
+}
+/** Run the installed conformance CLI; on failure retain a sanitized receipt, then rethrow unchanged. */
+export async function runInstalledConformance({ mode, root, conformance, work, env, manifest, manifestSha256, conformanceReportPath }) {
+  const receipt = join(work, "conformance-report.json"), executionEnv = { ...env };
+  if (mode === "reference-db") {
+    const url = process.env.REFERENCE_DATABASE_URL, key = process.env.REFERENCE_CREDENTIAL_KEY;
+    requireThat(typeof url === "string" && url && typeof key === "string" && key && process.env.ENVIRONMENT === "test", "Explicit disposable reference DB/key and test safety marker are required.");
+    requireThat(["postgres:", "postgresql:"].includes(new URL(url).protocol), "Reference database URL must be PostgreSQL.");
+    Object.assign(executionEnv, { REFERENCE_DATABASE_URL: url, REFERENCE_CREDENTIAL_KEY: key, ENVIRONMENT: "test" });
+  }
+  try {
+    await execute(`installed-conformance-${mode}`, process.execPath, [join(conformance, "scripts/sync-conformance.mjs"), "--mode", mode, "--candidate-root", root, "--json", "--report", receipt],
+      { cwd: conformance, env: executionEnv, timeoutMs: mode === "reference-db" ? 1_800_000 : 900_000, terminationGraceMs: 8000 });
+  } catch (error) {
+    await retainConformanceFailure({ receipt, path: conformanceReportPath, mode, conformance, manifest, manifestSha256, failure: error });
+    throw error;
+  }
+  const report = await readJson(receipt);
+  const expectedCaseIDs = await installedCaseIDs(conformance, manifest, mode);
+  const result = { mode, status: "passed", ...validateConformance(report, { mode, manifest, manifestSha256, root, expectedCaseIDs }), receiptSha256: sha256(await readFile(receipt)) };
+  // Retain the sanitized named-case receipt rather than raw DB URLs, provider payloads or subprocess output.
+  await writeJson(conformanceReportPath, report);
+  return result;
 }
 const CONSUMER = `import assert from "node:assert/strict";
 import * as runtime from "@musubi/sync-runtime";
@@ -126,25 +225,7 @@ export async function verifySyncAlpha(args) {
     checks.push({ id: cli.id, status: "passed" });
     // No source checkout, dotenv, product DB/session/config variables or Node loader overrides are forwarded.
     let conformanceResult = { mode, status: "not-run" };
-    if (mode !== "artifact") {
-      const receipt = join(work, "conformance-report.json"), executionEnv = { ...env };
-      if (mode === "reference-db") {
-        const url = process.env.REFERENCE_DATABASE_URL, key = process.env.REFERENCE_CREDENTIAL_KEY;
-        requireThat(typeof url === "string" && url && typeof key === "string" && key && process.env.ENVIRONMENT === "test", "Explicit disposable reference DB/key and test safety marker are required.");
-        requireThat(["postgres:", "postgresql:"].includes(new URL(url).protocol), "Reference database URL must be PostgreSQL.");
-        Object.assign(executionEnv, { REFERENCE_DATABASE_URL: url, REFERENCE_CREDENTIAL_KEY: key, ENVIRONMENT: "test" });
-      }
-      await execute(`installed-conformance-${mode}`, process.execPath, [join(conformance, "scripts/sync-conformance.mjs"), "--mode", mode, "--candidate-root", root, "--json", "--report", receipt],
-        { cwd: conformance, env: executionEnv, timeoutMs: mode === "reference-db" ? 1_800_000 : 900_000, terminationGraceMs: 8000 });
-      const report = await readJson(receipt);
-      requireThat(manifest.conformance?.manifest === "apps/sync-reference/conformance/manifest.v1.json", "Unsupported installed conformance path.");
-      const corpusPath = join(conformance, manifest.conformance.manifest);
-      requireThat(sha256(await readFile(corpusPath)) === manifest.conformance.manifestSha256, "Installed conformance manifest differs.");
-      const expectedCaseIDs = requiredCases(await readJson(corpusPath), mode);
-      conformanceResult = { mode, status: "passed", ...validateConformance(report, { mode, manifest, manifestSha256, root, expectedCaseIDs }), receiptSha256: sha256(await readFile(receipt)) };
-      // Retain the sanitized named-case receipt rather than raw DB URLs, provider payloads or subprocess output.
-      await writeJson(conformanceReportPath, report);
-    }
+    if (mode !== "artifact") conformanceResult = await runInstalledConformance({ mode, root, conformance, work, env, manifest, manifestSha256, conformanceReportPath });
     const after = (await files(root)).filter(entry => !["candidate.json", "provenance/files.json"].includes(entry.path));
     requireThat(JSON.stringify(after) === JSON.stringify(inventory) && sha256(await readFile(join(root, "candidate.json"))) === manifestSha256,
       "Installed candidate changed during verification.");
@@ -156,4 +237,4 @@ export async function verifySyncAlpha(args) {
   } finally { await rm(work, { recursive: true, force: true }); }
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) verifySyncAlpha(process.argv.slice(2)).then(
-  report => process.stdout.write(`${JSON.stringify(report)}\n`), () => { process.stderr.write('{"schemaVersion":1,"kind":"sync-alpha-verification-error","status":"failed"}\n'); process.exitCode = 1; });
+  report => process.stdout.write(`${JSON.stringify(report)}\n`), error => { process.stderr.write(`${JSON.stringify(verificationErrorRecord(error))}\n`); process.exitCode = 1; });

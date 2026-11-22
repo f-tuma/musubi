@@ -14,6 +14,8 @@ const localPath = value => typeof value === "string" && /^[a-zA-Z0-9_./-]+$/.tes
 const hash = bytes => createHash("sha256").update(bytes).digest("hex");
 export class ConformanceError extends Error { constructor(code) { super(code); this.code = code; } }
 const fail = code => { throw new ConformanceError(code); };
+// Output-free child termination classes kept on a failed entry; never free text.
+export const TERMINATION_REASONS = Object.freeze(["timeout", "output-overflow", "descendants-survived", "start-failed"]);
 export function parseArguments(args) {
   const result = { mode: undefined, json: false, list: false, report: undefined, candidateRoot: undefined, scenario: undefined }, seen = new Set();
   for (let i = 0; i < args.length; i++) {
@@ -85,7 +87,8 @@ export function failedEntryResults(entry, error, durationMs) {
   return caseIDs([entry]).map(id => ({ id, status: "failed", durationMs, exitCode: null, skipped: 0, todo: 0,
     cleanup: bootstrap ? error.cleanup : null,
     ...(bootstrap ? { cleanupEvidence: error.cleanupEvidence } : {}),
-    errorCode: error instanceof ConformanceError || bootstrap ? error.code : "entry-unavailable" }));
+    errorCode: error instanceof ConformanceError || bootstrap ? error.code : "entry-unavailable",
+    ...(error instanceof ConformanceError && TERMINATION_REASONS.includes(error.terminationReason) ? { terminationReason: error.terminationReason } : {}) }));
 }
 export const execute = executeOwned;
 
@@ -127,7 +130,11 @@ async function runCorpus(options, { root = SOURCE_ROOT, run = execute, env = pro
       const args = entry.kind === "json" ? [...launch, resolve(root, entry.file), "--json", ...(options.scenario ? ["--scenario", entry.scenarios[0]] : [])] :
         [...launch, "--test", `--test-reporter=${pathToFileURL(resolve(root, "apps/sync-reference/conformance/node-reporter.mjs")).href}`, resolve(root, "apps/sync-reference/conformance/module.mjs")];
       const child = await run(process.execPath, args, { cwd: root, env: childEnv, timeoutMs: entry.timeoutMs });
-      if (child.exitCode !== 0 || child.groupReaped !== true) fail("child-exit-failed");
+      if (child.exitCode !== 0 || child.groupReaped !== true) {
+        const error = new ConformanceError("child-exit-failed");
+        if (TERMINATION_REASONS.includes(child.terminationReason)) error.terminationReason = child.terminationReason;
+        throw error;
+      }
       if (entry.kind === "json") results = decodeJsonReport(child.stdout, entry);
       else { decodeModuleReport(child.stdout, entry); results = [{ id: entry.id, status: "passed", durationMs: Math.round(performance.now() - started), exitCode: child.exitCode, skipped: 0, todo: 0, cleanup: null }]; }
     } catch (error) { results = failedEntryResults(entry, error, Math.round(performance.now() - started)); if (error instanceof ReferenceBootstrapError) cleanup = error.cleanup; }

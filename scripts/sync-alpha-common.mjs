@@ -181,6 +181,15 @@ export async function cleanEnvironment(root, extra = {}) {
   return { PATH: process.env.PATH ?? "", HOME: join(root, "home"), XDG_CACHE_HOME: join(root, "cache"), XDG_CONFIG_HOME: join(root, "config"),
     XDG_DATA_HOME: join(root, "data"), TMPDIR: join(root, "tmp"), LANG: "C.UTF-8", TZ: "UTC", CI: "true", ...extra };
 }
+// Fixed, output-free failure classes for owned child processes and for the
+// installed conformance runner's per-entry child termination.
+export const EXECUTE_FAILURE_CODES = Object.freeze(["child-failed", "timeout", "output-overflow", "descendants-survived", "interrupted", "cleanup-incomplete"]);
+export const TERMINATION_REASONS = Object.freeze(["timeout", "output-overflow", "descendants-survived", "start-failed"]);
+function executionFailure(id, code, message) {
+  const error = new Error(message);
+  error.id = id; error.code = EXECUTE_FAILURE_CODES.includes(code) ? code : "child-failed";
+  return error;
+}
 export async function execute(id, command, args, { cwd, env, input, expectedCode = 0, timeoutMs = 120_000, maximumOutput = 8_000_000,
   terminationGraceMs = 1000, reapTimeoutMs = 2000 } = {}) {
   requireThat(/^[a-z][a-z0-9-]{0,79}$/.test(id), "Invalid command identifier.");
@@ -225,8 +234,8 @@ export async function execute(id, command, args, { cwd, env, input, expectedCode
       let timer; const reaped = await Promise.race([closed.then(value => { result = value; return true; }), new Promise(done => { timer = setTimeout(() => done(false), reapTimeoutMs); })]);
       clearTimeout(timer); if (!reaped) cleanupFailed = true;
     }
-    requireThat(!cleanupFailed, `${id}: owned process group cleanup incomplete.`);
-    requireThat(!failure && !result.interrupted && result.code === expectedCode, `${id}: required process did not complete successfully.`);
+    if (cleanupFailed) throw executionFailure(id, "cleanup-incomplete", `${id}: owned process group cleanup incomplete.`);
+    if (failure || result.interrupted || result.code !== expectedCode) throw executionFailure(id, failure ?? "child-failed", `${id}: required process did not complete successfully.`);
     return { id, code: result.code, stdout: Buffer.concat(stdout), stderr: Buffer.concat(stderr) };
   } finally { clearTimeout(deadline); process.removeListener("SIGTERM", terminate); process.removeListener("SIGINT", terminate); }
 }
