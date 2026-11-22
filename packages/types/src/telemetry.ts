@@ -9,7 +9,7 @@ const SENSITIVE_KEY = /(authorization|cookie|password|passwd|passphrase|secret|t
 const QUERY_KEYS: Record<string, true> = { query_string: true, "http.query": true, "url.query": true };
 // Click breadcrumbs and INP/LCP spans name DOM elements with these attributes,
 // and Musubi's labels carry event titles, calendar and user names.
-const ELEMENT_LABEL = /\[(?:aria-label|title|alt|name)=".*?"\]/g;
+const ELEMENT_LABEL = /\[(?:aria-label|title|alt|name)="[\s\S]*?"\]/g;
 
 /**
  * Sentry SDK v11 `dataCollection`: its defaults send request bodies, headers,
