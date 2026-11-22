@@ -1,0 +1,13 @@
+diff --git a/dist/social-providers/microsoft-entra-id.mjs b/dist/social-providers/microsoft-entra-id.mjs
+index b59a5a92e37358992b2a49eef734ebc79cbcfa82..7c33c1b86945b46cda864bf8e3fba7bfe2baba83 100644
+--- a/dist/social-providers/microsoft-entra-id.mjs
++++ b/dist/social-providers/microsoft-entra-id.mjs
+@@ -30,7 +30,7 @@ const microsoft = (options) => {
+ 	return {
+ 		id: "microsoft",
+ 		name: "Microsoft EntraID",
+-		accountSubject: ({ profile }) => profile.oid,
++		accountSubject: ({ profile }) => profile.sub,
+ 		createAuthorizationURL(data) {
+ 			if (!getPrimaryClientId(options.clientId)) {
+ 				logger.error("Client Id is required for Microsoft Entra ID. Make sure to provide it in the options.");
