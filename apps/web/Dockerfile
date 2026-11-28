@@ -15,7 +15,10 @@ COPY packages/types packages/types
 RUN pnpm --filter @musubi/web... install --frozen-lockfile
 RUN pnpm --filter @musubi/web build
 # The static sentry-cli for this platform, used at runtime to upload source maps.
-RUN cp node_modules/@sentry/cli-linux-*/bin/sentry-cli /repo/sentry-cli
+# Resolved through the web app's own @sentry/cli (3.x, artifact bundles only):
+# the hoisted root copy is the 2.x one the Vite plugin pulls in, which falls
+# back to release-based upload and fails with "Release not found".
+RUN cp "$(cd apps/web && node -p "require('@sentry/cli/js/helper').getPath()")" /repo/sentry-cli
 
 # Nitro emits a self-contained bundle: .output/server carries its own
 # node_modules, so the runtime needs neither pnpm nor the monorepo source.
